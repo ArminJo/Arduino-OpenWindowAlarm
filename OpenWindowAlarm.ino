@@ -285,6 +285,10 @@ void loop() {
 #ifdef DEBUG
                 writeString(F("Detected window already closed -> start again\n"));
 #endif
+                // reset history in order to avoid a new detection next sample, since tTemperatureNewSum may still be lower than tTemperatureOldSum
+                for (i = 0; i < (sizeof(sTemperatureArray) / sizeof(uint16_t)) - 1; ++i) {
+                    sTemperatureArray[i] = 0;
+                }                
             } else {
                 if (tTemperatureNewSum < sTemperatureMinimumAfterWindowOpen) {
                     // set new minimum
