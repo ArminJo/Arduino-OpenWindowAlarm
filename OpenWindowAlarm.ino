@@ -4,15 +4,25 @@
  * Overview:
  * Every 24 seconds a sample is taken of the ATtiny internal temperature sensor which has a resolution of 1 degree.
  * If temperature is lower than "old" temperature value, then an alarm is issued 5 minutes later, if "the condition still holds".
- * This delay is implemented by 3 times sleeping at SLEEP_MODE_PWR_DOWN for a period of 8 seconds in order to reduce power consumption.
+ * Detection of an open window is indicated by a longer 20ms blink and a short click every 24 seconds.
+ * A low battery (below 3.55 Volt) is indicated by beeping and flashing LED every 24 seconds. Only the beep (not the flash) is significantly longer than at open window detection.
  *
  * Detailed description:
- * Open Window is detected after (TEMPERATURE_COMPARE_AMOUNT * TEMPERATURE_SAMPLE_SECONDS) seconds of reading a temperature
- * which value is TEMPERATURE_DELTA_THRESHOLD_DEGREE lower than the temperature (TEMPERATURE_COMPARE_DISTANCE * TEMPERATURE_SAMPLE_SECONDS) seconds before.
- * It is indicated by a 4 times longer blink every 24 seconds.
+ * Open window is detected after `TEMPERATURE_COMPARE_AMOUNT * TEMPERATURE_SAMPLE_SECONDS` seconds of reading a temperature
+ * which value is `TEMPERATURE_DELTA_THRESHOLD_DEGREE` lower than the temperature `TEMPERATURE_COMPARE_DISTANCE * TEMPERATURE_SAMPLE_SECONDS` seconds before.
+ * The delay is implemented by 3 times sleeping at `SLEEP_MODE_PWR_DOWN` for a period of 8 seconds in order to reduce power consumption.
+ * Detection of an open window is indicated by a longer 20ms blink and a short click every 24 seconds.
  * The internal sensor has therefore 3 minutes time to adjust to the outer temperature, to get even small changes in temperature.
  * The greater the temperature change the earlier the change of sensor value and detection of an open window.
- * After open window detection Alarm is activated after OPEN_WINDOW_MINUTES if actual temperature is not higher than the minimum temperature (+ 1) i.e. the window is not closed yet.
+ * After open window detection Alarm is activated after `OPEN_WINDOW_MINUTES` if actual temperature is not higher than the minimum temperature (+ 1) i.e. the window is not closed yet.
+ *
+ * Every `VCC_MONITORING_DELAY_MIN` minutes the battery voltage is measured. A low battery (below `VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT` Millivolt)
+ * is indicated by beeping and flashing LED every 24 seconds. Only the beep (not the flash) is significantly longer than at open window detection.
+ *
+ * Power consumption:
+ * Power consumption is 6uA at sleep and 2.8 mA at at 1MHz active.
+ * Loop needs 2.1 ms and with DEBUG 6.5 ms => active time is ca. 1/10k or 1/4k of total time and power consumption is 500 times more than sleep.
+ *   => Loop adds 5% to 12% to total power consumption.
  *
  *  Copyright (C) 2018  Armin Joachimsmeyer
  *  armin.joachimsmeyer@gmail.com
@@ -35,14 +45,12 @@
 #include "TinySerialOut.h"
 #endif
 
-//#include "AVRUtils.h"
-
 #include <avr/boot.h>  // needed for boot_signature_byte_get()
-#include <avr/power.h> // needed for  clock_prescale_set()
+#include <avr/power.h> // needed for clock_prescale_set()
 #include <avr/sleep.h> // needed for sleep_enable()
 #include <avr/wdt.h>   // needed for WDTO_8S
 
-#define VERSION "1.0"
+#define VERSION "1.1"
 
 /*
  */
@@ -62,6 +70,19 @@ uint16_t sTemperatureAtWindowOpen;
 bool sOpenWindowDetected = false;
 uint8_t sOpenWindowSampleDelayCounter;
 
+/*
+ * VCC monitoring
+ */
+const uint16_t VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT = 3550; // 3.7 Volt is normal operating voltage
+bool sVCCVoltageTooLow = false;
+const uint8_t VCC_MONITORING_DELAY_MIN = 60; // Check VCC every hour
+uint16_t sVCCMonitoringDelayCounter = (VCC_MONITORING_DELAY_MIN * 60) / TEMPERATURE_SAMPLE_SECONDS;
+
+// #define ALARM_TEST incompatible with Pullup at 0 bootloader
+#ifdef ALARM_TEST
+#define ALARM_TEST_PIN PB0
+#endif
+
 //
 // ATMEL ATTINY85
 //
@@ -72,29 +93,34 @@ uint8_t sOpenWindowSampleDelayCounter;
 //                           GND  4|    |5  PB0 (D0) OC0A/AIN0 - Alarm Test if connected to ground
 //
 
-#define ALARM_TEST_PIN PB0
 #define LED_PIN  PB1
 #define TONE_PIN PB4
 #define TONE_PIN_INVERTED PB3
 
 #define ADC_TEMPERATURE_CHANNEL_MUX 15
+#define ADC_1_1_VOLT_CHANNEL_MUX 12
+#define SHIFT_VALUE_FOR_REFERENCE REFS2
 
 #if (LED_PIN == TX_PIN)
 #error "LED pin must not be equal TX pin."
 #endif
 
-const uint16_t LED_PULSE_LENGTH = 200; // 500 is well visible, 200 is OK
+#define LED_PULSE_LENGTH 200 // 500 is well visible, 200 is OK
+#if (LED_PULSE_LENGTH < 150)
+#error "LED_PULSE_LENGTH must at least be 150, since the code after digitalWrite(LED_PIN, 1) needs 150 us."
+#endif
 
 uint8_t sMCUSRStored; // content of MCUSR register at startup
 
 void PWMtone(uint8_t aPin, unsigned int aFrequency, unsigned long aDurationMillis = 0);
-void signalReading();
+void delayAndSignalOpenWindowDetectionAndLowVCC();
 void alarm();
 void initSleep(uint8_t tSleepMode);
 void sleepWithWatchdog(uint8_t aWatchdogPrescaler);
 void sleepDelay(uint16_t aSecondsToSleep);
 void delayMilliseconds(unsigned int aMillis);
 uint16_t readADCChannelWithReferenceOversample(uint8_t aChannelNumber, uint8_t aReference, uint8_t aOversampleExponent);
+void checkVCC();
 void changeDigisparkClock();
 
 /***********************************************************************************
@@ -116,31 +142,33 @@ void setup() {
     initTXPin();
 #endif
 
-    changeDigisparkClock();
-
-    // initialize the LED pin as an output.
+    /*
+     * initialize the pins
+     */
     pinMode(LED_PIN, OUTPUT);
+    pinMode(TONE_PIN_INVERTED, OUTPUT);
+    pinMode(TONE_PIN, OUTPUT);
+#ifdef ALARM_TEST
+    pinMode(ALARM_TEST_PIN, INPUT_PULLUP);
+#endif
+
+    changeDigisparkClock();
 
 #ifdef DEBUG
     writeString(F("START " __FILE__ "\nVersion " VERSION " from " __DATE__ "\nAlarm delay = "));
     writeUnsignedByte(OPEN_WINDOW_ALARM_DELAY_MINUTES);
-    writeString(F(" minutes\nMCUSR="));
-    writeUnsignedByteHex(sMCUSRStored);
-    write1Start8Data1StopNoParity('\n');
+    writeString(F(" minutes\n"));
 #endif
 
 #ifdef TRACE
+    writeString(F("MCUSR="));
+    writeUnsignedByteHex(sMCUSRStored);
     writeString(F(" LFuse="));
     writeUnsignedByteHex(boot_lock_fuse_bits_get(GET_LOW_FUSE_BITS));
     writeString(F(" OSCCAL="));
     writeUnsignedByteHex(tOSCCAL);
     write1Start8Data1StopNoParity('\n');
 #endif
-
-    pinMode(TONE_PIN_INVERTED, OUTPUT);
-    pinMode(TONE_PIN, OUTPUT);
-    pinMode(LED_PIN, OUTPUT);
-    pinMode(ALARM_TEST_PIN, INPUT_PULLUP);
 
     /*
      * init sleep mode
@@ -154,8 +182,9 @@ void setup() {
      */
     readADCChannelWithReferenceOversample(ADC_TEMPERATURE_CHANNEL_MUX, INTERNAL1V1, 0);
 
-    PWMtone(TONE_PIN, 2200, 100); // signal setup()
-
+    if (sMCUSRStored & (1 << PORF)) {
+        PWMtone(TONE_PIN, 2200, 100); // signal power on. Not entered after reset.
+    }
     /*
      * Blink LED at startup to show OPEN_WINDOW_MINUTES
      */
@@ -168,9 +197,7 @@ void setup() {
         delayMilliseconds(200);
     }
 
-    /*
-     * For testing the speaker connection
-     */
+#ifdef ALARM_TEST
     if (!digitalRead(ALARM_TEST_PIN)) {
 #ifdef DEBUG
         writeString(F("Test signal out"));
@@ -178,6 +205,9 @@ void setup() {
 #endif
         alarm();
     }
+#endif
+
+    checkVCC();
 
 // disable digital input buffer to save power
 // do not disable buffer for outputs whose values are read back
@@ -194,8 +224,14 @@ void setup() {
  * Check if temperature decreases after power on.
  * Check if window was just opened.
  * If window was opened check if window still open -> ALARM
+ * Loop needs 2.1 ms and with DEBUG 6.5 ms => active time is ca. 1/10k or 1/4k of total time and power consumption is 500 times more than sleep.
+ * 2 ms for Temperature reading
+ * 0.25 ms for processing
+ * 0.05 ms for LED flashing
+ *  + 4.4 ms for DEBUG
  */
 void loop() {
+
     uint16_t tTemperatureNewSum = 0;
     uint16_t tTemperatureOldSum = 0;
 
@@ -223,10 +259,23 @@ void loop() {
 
     /*
      * Read new Temperature (typical 280 - 320 at 25 C) and add to sum
+     * needs 2 ms
      */
     sTemperatureArray[0] = readADCChannelWithReferenceOversample(ADC_TEMPERATURE_CHANNEL_MUX, INTERNAL1V1, 4);
-    signalReading();
     tTemperatureNewSum += sTemperatureArray[0];
+
+#ifdef DEBUG
+    // needs 4.4 ms
+    writeString(F("Temp="));
+    writeUnsignedInt(sTemperatureArray[0]);
+    writeString(F(" Old="));
+    writeUnsignedInt(tTemperatureOldSum);
+    writeString(F(" New="));
+    writeUnsignedInt(tTemperatureNewSum);
+    write1Start8Data1StopNoParity('\n');
+#endif
+    // activate LED after reading to signal it. Do it here to reduce delay below.
+    digitalWrite(LED_PIN, 1);
 
     /*
      * Check if reason for reset was "power on" (in contrast to "reset pin") and temperature is decreasing
@@ -248,16 +297,6 @@ void loop() {
             sTemperatureArray[i] = 0;
         }
     } else {
-
-#ifdef DEBUG
-        writeString(F("Temp="));
-        writeUnsignedInt(sTemperatureArray[0]);
-        writeString(F(" Old="));
-        writeUnsignedInt(tTemperatureOldSum);
-        writeString(F(" New="));
-        writeUnsignedInt(tTemperatureNewSum);
-        write1Start8Data1StopNoParity('\n');
-#endif
 
         if (!sOpenWindowDetected) {
             /*
@@ -288,7 +327,7 @@ void loop() {
                 // reset history in order to avoid a new detection next sample, since tTemperatureNewSum may still be lower than tTemperatureOldSum
                 for (i = 0; i < (sizeof(sTemperatureArray) / sizeof(uint16_t)) - 1; ++i) {
                     sTemperatureArray[i] = 0;
-                }                
+                }
             } else {
                 if (tTemperatureNewSum < sTemperatureMinimumAfterWindowOpen) {
                     // set new minimum
@@ -323,6 +362,19 @@ void loop() {
             } // already closed
         } // !sOpenWindowDetected
     }  // after power on and temperature is decreasing
+
+    /*
+     * VCC check every hour
+     */
+    sVCCMonitoringDelayCounter--;
+    if (sVCCMonitoringDelayCounter == 0) {
+        sVCCMonitoringDelayCounter = (VCC_MONITORING_DELAY_MIN * 60) / TEMPERATURE_SAMPLE_SECONDS;
+        checkVCC(); // needs 4.5 ms
+    }
+
+    delayAndSignalOpenWindowDetectionAndLowVCC();
+    // deactivate LED before sleeping
+    digitalWrite(LED_PIN, 0);
 
     sleepDelay(TEMPERATURE_SAMPLE_SECONDS);
 }
@@ -382,50 +434,64 @@ void PWMtone(uint8_t aPin, unsigned int aFrequency, unsigned long aDurationMilli
 }
 
 /*
- * Generates a 2200 | 1100 Hertz tone signal for 10 minutes and repeat it every hour
+ * plays alarm signal for the specified seconds
  */
-void alarm() {
-    while (true) {
-        uint16_t tCounter = (600000 / 1300); // 600 seconds / 10 Minutes
-        while (tCounter-- != 0) {
+void playAlarmSignalSeconds(uint16_t aSecondsToPlay) {
+    uint16_t tCounter = aSecondsToPlay / 1300;
+    while (tCounter-- != 0) {
+        // activate LED
+        digitalWrite(LED_PIN, 1);
+        PWMtone(TONE_PIN, 1100);  // specify half frequency -> PWM doubles it
 
-            // activate LED
-            digitalWrite(LED_PIN, 1);
-            delayMilliseconds(300);
+        delayMilliseconds(300);
 
-            // deactivate LED
-            digitalWrite(LED_PIN, 0);
+        // deactivate LED
+        digitalWrite(LED_PIN, 0);
+        PWMtone(TONE_PIN, 2200);  // specify half frequency -> PWM doubles it
 
-            PWMtone(TONE_PIN, 2200);  // specify half frequency -> PWM doubles it
-            delayMilliseconds(1000);
-            PWMtone(TONE_PIN, 1100);  // specify half frequency -> PWM doubles it
-        }
-#ifdef DEBUG
-        writeString(F("After 10 minute alarm now pause for 50 minutes"));
-        write1Start8Data1StopNoParity('\n');
-#endif
-        noTone(TONE_PIN);
-        sleepDelay(6000); // Wait 6000 seconds / 50 Minutes
+        delayMilliseconds(1000);
     }
 }
 
 /*
- * Flash LED only for a short period to save power.
+ * Generates a 2200 | 1100 Hertz tone signal for 10 minutes and then play it 10 seconds with intervals starting from 24 seconds up to 5 minutes.
+ */
+void alarm() {
+
+    playAlarmSignalSeconds(600);  // 600 seconds / 10 Minutes
+
+#ifdef DEBUG
+    writeString(F("After 10 minutes alarm now play it for 10 s with 24 to 600 s delay\n"));
+#endif
+
+    uint16_t tDelay = 24;
+    while (true) {
+        sleepDelay(tDelay); // Start with 24 seconds
+        playAlarmSignalSeconds(10);
+        noTone(TONE_PIN);
+        if (tDelay < 600) { // up to 5 minutes
+            tDelay++;
+        }
+    }
+}
+
+/*
+ * Delay to flash LED only for a short period to save power.
  * If open window detected, increase pulse length to give a visual feedback
  */
-void signalReading() {
-    // activate LED
-    digitalWrite(LED_PIN, 1);
+void delayAndSignalOpenWindowDetectionAndLowVCC() {
     if (sOpenWindowDetected) {
-        PWMtone(TONE_PIN, 2200); // signal setup()
+        PWMtone(TONE_PIN, 2200);
         delayMicroseconds(2000); // 2000 can be heard
         noTone(TONE_PIN);
         delayMicroseconds(20000); // to let the led light longer
+    } else if (sVCCVoltageTooLow) {
+        PWMtone(TONE_PIN, 1600);
+        delayMicroseconds(20000);
+        noTone(TONE_PIN);
     } else {
-        delayMicroseconds(LED_PULSE_LENGTH);
+        delayMicroseconds(LED_PULSE_LENGTH - 150);  // - 150 for the duration from digitalWrite(LED_PIN, 1) until here
     }
-    // deactivate LED
-    digitalWrite(LED_PIN, 0);
 }
 
 void sleepDelay(uint16_t aSecondsToSleep) {
@@ -444,7 +510,7 @@ void delayMilliseconds(unsigned int aMillis) {
 #define ADC_PRESCALE8    3 // 104 microseconds per ADC conversion at 1 MHz
 uint16_t readADCChannelWithReferenceOversample(uint8_t aChannelNumber, uint8_t aReference, uint8_t aOversampleExponent) {
     uint16_t tSumValue = 0;
-    ADMUX = aChannelNumber | (aReference << REFS2);
+    ADMUX = aChannelNumber | (aReference << SHIFT_VALUE_FOR_REFERENCE);
 
 // ADCSRB = 0; // free running mode if ADATE is 1 - is default
 // ADSC-StartConversion ADATE-AutoTriggerEnable ADIF-Reset Interrupt Flag
@@ -466,6 +532,39 @@ uint16_t readADCChannelWithReferenceOversample(uint8_t aChannelNumber, uint8_t a
     return (tSumValue >> aOversampleExponent);
 }
 
+uint16_t getVCCVoltageMillivolt(void) {
+    // use AVCC with external capacitor at AREF pin as reference
+    uint8_t tOldADMUX = ADMUX;
+    /*
+     * Must wait >= 200 us if reference has to be switched to VSS
+     * Must wait >= 70 us if channel has to be switched to ADC_1_1_VOLT_CHANNEL_MUX
+     */
+    if ((ADMUX & (INTERNAL << SHIFT_VALUE_FOR_REFERENCE)) || ((ADMUX & 0x0F) != ADC_1_1_VOLT_CHANNEL_MUX)) {
+        // switch AREF
+        ADMUX = ADC_1_1_VOLT_CHANNEL_MUX | (DEFAULT << SHIFT_VALUE_FOR_REFERENCE);
+        // and wait for settling
+        delayMicroseconds(400); // experimental value is > 200 us
+    }
+    uint16_t tVCC = readADCChannelWithReferenceOversample(ADC_1_1_VOLT_CHANNEL_MUX, DEFAULT, 2);
+    ADMUX = tOldADMUX;
+    /*
+     * Do not wait for reference to settle here, since it may not be necessary
+     */
+    return ((1024L * 1100) / tVCC);
+}
+
+void checkVCC() {
+    uint16_t sVCCVoltageMillivolt = getVCCVoltageMillivolt();
+#ifdef DEBUG
+    writeString(F("VCC="));
+    writeUnsignedInt(sVCCVoltageMillivolt);
+    writeString(F("mV\n"));
+#endif
+    if (sVCCVoltageMillivolt < VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT) {
+        sVCCVoltageTooLow = true;
+    }
+}
+
 void initSleep(uint8_t tSleepMode) {
     sleep_enable()
     ;
@@ -478,7 +577,7 @@ void initSleep(uint8_t tSleepMode) {
  * WDTO_1S to WDTO_8S
  */
 void sleepWithWatchdog(uint8_t aWatchdogPrescaler) {
-    MCUSR &= ~_BV(WDRF); // Clear WDRF in MCUSR
+    MCUSR = ~_BV(WDRF); // Clear WDRF in MCUSR
 
     // use wdt_enable() since it handles that the WDP3 bit is in bit 5 of the WDTCSR register
     wdt_enable(aWatchdogPrescaler);

@@ -35,14 +35,16 @@
  * or set it as Symbol like "-DTX_PIN PB1"
  */
 #ifndef TX_PIN
-#define TX_PIN     PB2 // (Pin7 on Tiny85) - use one of PB0 to PB4 (+PB5) here
+#define TX_PIN  PB2 // (case pin 7 on Tiny85) - use one of PB0 to PB4 (+PB5) here
 #endif
 
 /*
  * @1MHz use bigger (+120 bytes for unrolled loop) but faster code. Otherwise only 38400 baud is possible.
  * @8/16 MHz use 115200 baud instead of 230400 baud.
  */
+#ifndef TINY_SERIAL_DO_NOT_USE_115200BAUD  // define this to force using other baud rates
 #define USE_115200BAUD
+#endif
 
 /*
  * Define or uncomment this, if you want to save code size and if you can live with 87 micro seconds intervals of disabled interrupts for each sent byte.
@@ -69,9 +71,12 @@ inline void writeValue(uint8_t aValue) {
     write1Start8Data1StopNoParity(aValue);
 }
 
+
 // The same class as for plain arduino
+#ifndef F
 class __FlashStringHelper;
 #define F(string_literal) (reinterpret_cast<const __FlashStringHelper *>(PSTR(string_literal)))
+#endif
 
 void writeString(const char * aStringPtr);
 void writeString(const __FlashStringHelper * aStringPtr);
@@ -91,6 +96,7 @@ void writeUnsignedInt(unsigned int aInteger);
 void writeLong(long aLong);
 void writeUnsignedLong(unsigned long aLong);
 void writeFloat(double aFloat);
+void writeFloat(double aFloat, uint8_t aDigits);
 
 class TinyDebugSerial {
 public:
