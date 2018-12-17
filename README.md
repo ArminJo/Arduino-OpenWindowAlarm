@@ -1,7 +1,10 @@
 # OpenWindowAlarm
+
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+
 Place this on a windowsill and you will be alarmed if you leave the window open longer than five minutes.
 It senses the falling temperature and thus works best in winter. It requires only 0.006 milliampere. This means one battery or power bank will last the whole winter.
-![OpenWindowAlarm on a windowsill](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/OpenWindowAlarm.jpg)
+![OpenWindowAlarm on a windowsill](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/OpenWindowAlarmAction.jpg)
 OpenWindowAlarm on a windowsill
 
 # Function
