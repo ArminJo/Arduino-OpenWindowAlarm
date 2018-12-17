@@ -1,5 +1,5 @@
 # OpenWindowAlarm
-Place this on a windowsill and you will be alarmed if you leave the window open longer then five minutes.
+Place this on a windowsill and you will be alarmed if you leave the window open longer than five minutes.
 It senses the falling temperature and thus works best in winter. It requires only 0.006 milliampere. This means one battery or power bank will last the whole winter.
 ![OpenWindowAlarm on a windowsill](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/OpenWindowAlarm.jpg)
 OpenWindowAlarm on a windowsill
@@ -11,8 +11,7 @@ A detection of an open window is indicated by a longer 20ms blink and a short cl
 A low battery (below 3.55 Volt) is indicated by beeping and flashing the LED every 24 seconds. Only the beep (not the flash) is significantly longer than the beep for an open window detection.
 
 # How to make your own
-The parts you need:
-At the bottom you see a battery charger and 2 different batteries. One is from a tiny quadrocopter, the other from an old mobile phone. You can get the Li-Ion Battery Charger on eBay for 1€.
+The parts you need: At the bottom you see a battery charger and 2 different batteries. One is from a tiny quadrocopter, the other from an old mobile phone. You can get the Li-Ion Battery Charger on eBay for 1€.
 ![Parts](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/PartsAll.jpg)
 
 ## Installation of tools
@@ -27,7 +26,7 @@ Compile and upload it. Keep in mind, that upload can not work if the speaker is 
 If everything worked, the build in LED of the Digispark will blink 5 times and then start flashing after 8 seconds with a 24 second interval.
 
 ## Power bank as supply
-**Only power banks without an auto switch-off function (allowed in the EU) will work for this circuit.**
+**Only power banks without an auto switch-off function (not allowed in the EU) will work for this circuit.**
 
 ## Power reduction
 Before power reduction changes
@@ -47,7 +46,7 @@ Now we have a module that uses 6/9.5 mA at 3,7/5 Volt. With a power bank of 2000
 After power reduction changes
 ![Final power reduction](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/Final-Version-Detail.jpg)
 
-   If you want to connect the WindowAlarm to a USB power bank **without auto switch off**, you only have to disconnect the resistor Do this AFTER programming the device.
+   If you want to connect the WindowAlarm to a USB power bank **without auto switch off**, you only have to disconnect the resistor. Do this AFTER programming the device.
    You could also first flush a new bootloader with [Burn_upgrade_micronucleus-t85_pullup_at_0.cmd](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/Burn_upgrade_micronucleus-t85_pullup_at_0.cmd) and then connect the resistor to P0 (Pin4).
    Now the board consumes 6-9 Microampere which is negligable compared to the 100 Microampere internal loss of the power bank itself. This setup allows for more then 2 years of usage with a 2000mAh power bank **without auto switch off**.
    
