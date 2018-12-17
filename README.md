@@ -1,17 +1,17 @@
 # OpenWindowAlarm
-Place this on a windowsill and you will be alarmed if you opened the window too long, which means more than 5 minutes.
-It senses the falling temperature, so it works best in winter. It needs only 0.006 milliampere, so one battery or power bank will last the whole winter.
+Place this on a windowsill and you will be alarmed if you leave the window open longer than five minutes.
+It senses the falling temperature and thus works best in winter. It requires only 0.006 milliampere. This means one battery or power bank will last the whole winter.
 ![OpenWindowAlarm on a windowsill](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/OpenWindowAlarm.jpg)
 OpenWindowAlarm on a windowsill
 
 # Function
-Every 24 seconds a sample is taken of the ATtiny internal temperature sensor which has a resolution of 1 degree.
-If temperature is lower than "old" temperature value, then an alarm is issued 5 minutes later, if the condition still holds.
-Detection of an open window is indicated by a longer 20ms blink and a short click every 24 seconds.
-A low battery (below 3.55 Volt) is indicated by beeping and flashing the LED every 24 seconds. Only the beep (not the flash) is significantly longer than at open window detected.
+Every 24 seconds a reading is taken of the ATtiny internal temperature sensor which has a resolution of 1 degree.
+If temperature is lower than the "old" temperature value an alarm is issued five minutes later if by then the condition still holds true.
+A detection of an open window is indicated by a longer 20ms blink and a short click every 24 seconds.
+A low battery (below 3.55 Volt) is indicated by beeping and flashing the LED every 24 seconds. Only the beep (not the flash) is significantly longer than the beep for an open window detection.
 
 # How to make your own
-The parts you need. On the bottom you see a battery charger and 2 different batteries. One is from a tiny quadrocopter, the other from an old mobile phone. You can get the Li-Ion Battery Charger on eBay for 1€.
+The parts you need: At the bottom you see a battery charger and 2 different batteries. One is from a tiny quadrocopter, the other from an old mobile phone. You can get the Li-Ion Battery Charger on eBay for 1â‚¬.
 ![Parts](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/PartsAll.jpg)
 
 ## Installation of tools
@@ -22,41 +22,41 @@ as board in the *Tools* menu in order to get the right timing.
 ## Programming the Digispark board
 Create a new sketch with *File/New* and name it e.g. OpenWindowAlarm
 Copy the code from [OpenWindowAlarm.ino](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/OpenWindowAlarm.ino)
-Compile and upload it. Keep in mind, that upload can not work if speaker is connected.
-If everything was right, the build in LED of the Digispark will blink 5 times and then do a first flash after 8 seconds and afterwards flashes at a 24 seconds interval.
+Compile and upload it. Keep in mind, that upload can not work if the speaker is connected.
+If everything worked, the build in LED of the Digispark will blink 5 times and then start flashing after 8 seconds with a 24 second interval.
 
 ## Power bank as supply
-**Only power banks without a auto switch-off function (which are not allowed in the EU) will work for this circuit.**
+**Only power banks without an auto switch-off function (not allowed in the EU) will work for this circuit.**
 
 ## Power reduction
 Before power reduction changes
 ![Final power reduction](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/Digispark.jpg)
 
-Now we have a module which uses 6/9.5 mA at 3,7/5 Volt. With a power bank of 2000mAh it will run for 9 days. But it is possible to reduce power consumption to 6-9 µA in 3 Steps.
-1. Disabling the power LED by breaking the the copper wire from the power LED to the diode with a knife or removing / disabling the 102 resistor saves 2/2.2 mA.
+Now we have a module that uses 6/9.5 mA at 3,7/5 Volt. With a power bank of 2000mAh it will run for 9 days. But it is possible to reduce power consumption to 6-9 ÂµA in 3 Steps.
+1. Disabling the power LED by breaking the the copper wire that connects the power LED to the diode with a knife or removing / disabling the 102 resistor saves 2/2.2 mA.
 2. Removing the VIN voltage regulator saves 1.5/3.8 mA.
-       Now we have 2.5/3.5 mA at 3.7/5 Volt. Gives 23 days for a 2000mAh power bank.
-3. Disconnecting the USB Pullup resistor (marked 152) from 5 Volt (VCC) saves the 2.5/3.5 mA. Disconnect it by breaking the copper wire at the side of the resistor, which shows to the ATTiny. BUT this disables the USB interface and in turn the bootloader too.
+       Now we have 2.5/3.5 mA at 3.7/5 Volt. The module now lasts 23 days with a 2000mAh power bank.
+3. Disconnecting the USB Pullup resistor (marked 152) from 5 Volt (VCC) saves the 2.5/3.5 mA. Disconnect it by breaking the copper wire on the side of the resistor that points to the ATTiny BUT this also disables the USB interface and in turn the bootloader.
 
-   But there is a solution: 
-   If you use a battery then just connect the resistor directly to the USB 5 Volt which is easily available at one side of the diode. 
-   The right side of the diode can be found by using a continuity tester. One side of this diode is connected to pin 8 of the ATtiny (VCC).
+   There is a solution: 
+   If you use a battery then just connect the resistor directly to the USB 5 Volt that is easily available at one side of the diode. 
+   The correct side of the diode can be found by using a continuity tester. One side of this diode is connected to pin 8 of the ATtiny (VCC).
    The other side is connected to USB 5V.
    
 After power reduction changes
 ![Final power reduction](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/Final-Version-Detail.jpg)
 
-   If you want to connect the WindowAlarm to an USB power bank **without auto switch off**, you must just disconnect the resistor, but do it AFTER programming the device.
-   Or flush first a new bootloader with [Burn_upgrade_micronucleus-t85_pullup_at_0.cmd](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/Burn_upgrade_micronucleus-t85_pullup_at_0.cmd) and then connect the resistor to P0 (Pin4).
-   Now the board consumes 6-9 Microampere which is nothing compared to the 100 Microampere internal loss of the power bank itself. This gives more than 2 years for a 2000mAh power bank **without auto switch off**.
+   If you want to connect the WindowAlarm to a USB power bank **without auto switch off**, you only have to disconnect the resistor. Do this AFTER programming the device.
+   You could also first flush a new bootloader with [Burn_upgrade_micronucleus-t85_pullup_at_0.cmd](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/Burn_upgrade_micronucleus-t85_pullup_at_0.cmd) and then connect the resistor to P0 (Pin4).
+   Now the board consumes 6-9 Microampere which is negligable compared to the 100 Microampere internal loss of the power bank itself. This setup allows for more then 2 years of usage with a 2000mAh power bank **without auto switch off**.
    
-After power reduction changes for power bank
+After power reduction changes for the power bank
 ![Power reduction for USB power bank](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/OpenWindowAlarmPBDetail.jpg)
 
 
 ## Reset button
 If you do not want to remove power to reset the alarm connect a reset button between PB5 and ground. 
-I did it by connecting the unconnected VIN copper area to PB5 and solder the reset button on the VIN pin hole and on the big ground area of the removed VIN voltage regulator.
+I did this by connecting the unconnected VIN copper surface to PB5 and solder the reset button directly to the VIN pin hole and the big ground surface of the removed VIN voltage regulator.
 
 ## Loudspeaker
 Loudspeaker disassembly part 1
@@ -68,18 +68,17 @@ OpenWindowAlarm circuit with battery
 ![OpenWindowAlarm circuit with battery](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/Final-Version.jpg)
 
 # Placement
-To use the board place it on a windowsill and connect it with a battery or USB power bank.
-If the temperature on the sill is lower than the temperature, the board was located from,
-it takes additional 5 Minutes to intelligently adopt to the new start value.
+To use the board place it on a windowsill and connect it to a battery or USB power bank.
+If the temperature on the sill is lower than the temperature where the board was originally located it will take an additional 5 Minutes to intelligently adopt to the new start value.
 
 # Internal Operation
-* Open window is detected after `TEMPERATURE_COMPARE_AMOUNT * TEMPERATURE_SAMPLE_SECONDS` seconds of reading a temperature which value is `TEMPERATURE_DELTA_THRESHOLD_DEGREE` lower than the temperature `TEMPERATURE_COMPARE_DISTANCE * TEMPERATURE_SAMPLE_SECONDS` seconds before.
-* The delay is implemented by 3 times sleeping at `SLEEP_MODE_PWR_DOWN` for a period of 8 seconds in order to reduce power consumption.
-* Detection of an open window is indicated by a longer 20ms blink and a short click every 24 seconds.
-   The internal sensor has therefore 3 minutes time to adjust to the outer temperature, to get even small changes in temperature.
-   The greater the temperature change the earlier the change of sensor value and detection of an open window.
-* After open window detection Alarm is activated after `OPEN_WINDOW_MINUTES` if actual temperature is not higher than the minimum temperature (+ 1) i.e. the window is not closed yet.
-* Every `VCC_MONITORING_DELAY_MIN` minutes the battery voltage is measured. A low battery (below `VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT` Millivolt) is indicated by beeping and flashing LED every 24 seconds. Only the beep (not the flash) is significantly longer than at open window detection.
-* The alarm lasts 10 minutes, then it sounds 10 seconds with a break of 24 seconds initially up to a 5 minutes break. 
+* An open window is detected after `TEMPERATURE_COMPARE_AMOUNT * TEMPERATURE_SAMPLE_SECONDS` seconds of reading a temperature with a value of `TEMPERATURE_DELTA_THRESHOLD_DEGREE` lower than the temperature `TEMPERATURE_COMPARE_DISTANCE * TEMPERATURE_SAMPLE_SECONDS` seconds before.
+* The delay is implemented by sleeping 3 times at `SLEEP_MODE_PWR_DOWN` for a period of 8 seconds in order to reduce power consumption.
+* A detection of an open window is indicated by a longer 20ms blink and a short click every 24 seconds.
+   Therefore the internal sensor has a time of 3 minutes to adjust to the outer temperature in order to capture even small changes in temperature.
+   The greater the temperature change the earlier the sensor value will change and an detect an open window.
+* The alarm will not sound if `OPEN_WINDOW_MINUTES` after detecting an open window the current temperature is greater than the minimum measured temperature (+ 1) i.e. the window is closed already.
+* Every `VCC_MONITORING_DELAY_MIN` minutes the battery voltage is measured. A low battery (below `VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT` Millivolt) is indicated by beeping and flashing the LED every 24 seconds. Only the beep (not the flash) is significantly longer than the beep for an open window detection.
+* The initial alarm lasts for 10 minutes. After this it activates for a period 10 seconds with a increasing break between 24 seconds and 5 minutes. 
 
 
