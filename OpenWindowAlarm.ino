@@ -39,7 +39,9 @@
 
 #include <Arduino.h>
 
-//#define DEBUG // To see serial output with 115200 baud at pin2
+#define DEBUG // To see serial output with 115200 baud at pin2
+//#define TRACE // To see serial output with 115200 baud at pin2
+//#define ALARM_TEST // start alarm immediately if PB0 / D0 is connected to ground - incompatible with Pullup at 0 bootloader
 
 #ifdef DEBUG
 #include "TinySerialOut.h"
@@ -52,8 +54,10 @@
 
 #define VERSION "1.1"
 
-/*
- */
+#ifdef ALARM_TEST
+#define ALARM_TEST_PIN PB0
+#endif
+
 const uint8_t OPEN_WINDOW_ALARM_DELAY_MINUTES = 5;
 
 const uint16_t TEMPERATURE_SAMPLE_SECONDS = 24;  // use multiple of 8
@@ -77,11 +81,6 @@ const uint16_t VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT = 3550; // 3.7 Volt is normal o
 bool sVCCVoltageTooLow = false;
 const uint8_t VCC_MONITORING_DELAY_MIN = 60; // Check VCC every hour
 uint16_t sVCCMonitoringDelayCounter = (VCC_MONITORING_DELAY_MIN * 60) / TEMPERATURE_SAMPLE_SECONDS;
-
-// #define ALARM_TEST incompatible with Pullup at 0 bootloader
-#ifdef ALARM_TEST
-#define ALARM_TEST_PIN PB0
-#endif
 
 //
 // ATMEL ATTINY85
@@ -115,8 +114,7 @@ uint8_t sMCUSRStored; // content of MCUSR register at startup
 void PWMtone(uint8_t aPin, unsigned int aFrequency, unsigned long aDurationMillis = 0);
 void delayAndSignalOpenWindowDetectionAndLowVCC();
 void alarm();
-void initSleep(uint8_t tSleepMode);
-void sleepWithWatchdog(uint8_t aWatchdogPrescaler);
+void initPeriodicSleepWithWatchdog(uint8_t tSleepMode, uint8_t aWatchdogPrescaler);
 void sleepDelay(uint16_t aSecondsToSleep);
 void delayMilliseconds(unsigned int aMillis);
 uint16_t readADCChannelWithReferenceOversample(uint8_t aChannelNumber, uint8_t aReference, uint8_t aOversampleExponent);
@@ -162,18 +160,20 @@ void setup() {
 
 #ifdef TRACE
     writeString(F("MCUSR="));
-    writeUnsignedByteHex(sMCUSRStored);
+    writeUnsignedByteHexWithPrefix(sMCUSRStored);
     writeString(F(" LFuse="));
-    writeUnsignedByteHex(boot_lock_fuse_bits_get(GET_LOW_FUSE_BITS));
+    writeUnsignedByteHexWithPrefix(boot_lock_fuse_bits_get(GET_LOW_FUSE_BITS));
+    writeString(F(" WDTCR="));
+    writeUnsignedByteHexWithPrefix(WDTCR);
     writeString(F(" OSCCAL="));
-    writeUnsignedByteHex(tOSCCAL);
+    writeUnsignedByteHexWithPrefix(OSCCAL);
     write1Start8Data1StopNoParity('\n');
 #endif
 
     /*
-     * init sleep mode
+     * init sleep mode and wakeup period
      */
-    initSleep(SLEEP_MODE_PWR_DOWN);
+    initPeriodicSleepWithWatchdog(SLEEP_MODE_PWR_DOWN, WDTO_8S);
 // disable Arduino delay() and millis() timer0 and also its interrupts which kills the deep sleep.
     TCCR0B = 0;
 
@@ -216,7 +216,8 @@ void setup() {
     /*
      * wait 8 seconds, since ATtinys temperature is increased after the micronucleus boot process
      */
-    sleepWithWatchdog(WDTO_8S);
+    sleep_cpu()
+    ;
 }
 
 /*
@@ -413,9 +414,9 @@ void changeDigisparkClock() {
 #ifdef DEBUG
         uint8_t tOSCCAL = OSCCAL;
         writeString(F("Changed OSCCAL from "));
-        writeUnsignedByteHex(tOSCCAL);
+        writeUnsignedByteHexWithPrefix(tOSCCAL);
         writeString(F(" to "));
-        writeUnsignedByteHex(tStoredOSCCAL);
+        writeUnsignedByteHexWithPrefix(tStoredOSCCAL);
         write1Start8Data1StopNoParity('\n');
 #endif
         // retrieve the factory-stored oscillator calibration bytes to revert the digispark OSCCAL tweak
@@ -437,17 +438,22 @@ void PWMtone(uint8_t aPin, unsigned int aFrequency, unsigned long aDurationMilli
  * plays alarm signal for the specified seconds
  */
 void playAlarmSignalSeconds(uint16_t aSecondsToPlay) {
-    uint16_t tCounter = aSecondsToPlay / 1300;
+#ifdef DEBUG
+    writeString(F("Play alarm for "));
+    writeUnsignedInt(aSecondsToPlay);
+    writeString(F(" seconds\n"));
+#endif
+    uint16_t tCounter = (aSecondsToPlay * 10) / 13; // == ... * 1000 (ms per second) / (1300ms for a loop)
     while (tCounter-- != 0) {
         // activate LED
         digitalWrite(LED_PIN, 1);
-        PWMtone(TONE_PIN, 1100);  // specify half frequency -> PWM doubles it
+        PWMtone(TONE_PIN, 1100);
 
         delayMilliseconds(300);
 
         // deactivate LED
         digitalWrite(LED_PIN, 0);
-        PWMtone(TONE_PIN, 2200);  // specify half frequency -> PWM doubles it
+        PWMtone(TONE_PIN, 2200);
 
         delayMilliseconds(1000);
     }
@@ -497,7 +503,8 @@ void delayAndSignalOpenWindowDetectionAndLowVCC() {
 void sleepDelay(uint16_t aSecondsToSleep) {
     ADCSRA = 0; // disable ADC -> saves 150 - 200 uA
     for (uint16_t i = 0; i < (aSecondsToSleep / 8); ++i) {
-        sleepWithWatchdog(WDTO_8S);
+        sleep_cpu()
+        ;
     }
 }
 
@@ -565,31 +572,25 @@ void checkVCC() {
     }
 }
 
-void initSleep(uint8_t tSleepMode) {
-    sleep_enable()
-    ;
-    set_sleep_mode(tSleepMode);
-}
-
 /*
+ * Watchdog wakes CPU periodically and all we have to do is call sleep_cpu();
  * aWatchdogPrescaler (see wdt.h) can be one of
  * WDTO_15MS, 30, 60, 120, 250, WDTO_500MS
  * WDTO_1S to WDTO_8S
  */
-void sleepWithWatchdog(uint8_t aWatchdogPrescaler) {
+void initPeriodicSleepWithWatchdog(uint8_t tSleepMode, uint8_t aWatchdogPrescaler) {
+    sleep_enable()
+    ;
+    set_sleep_mode(tSleepMode);
     MCUSR = ~_BV(WDRF); // Clear WDRF in MCUSR
-
-    // use wdt_enable() since it handles that the WDP3 bit is in bit 5 of the WDTCSR register
-    wdt_enable(aWatchdogPrescaler);
 
 #if defined(__AVR_ATtiny25__) || defined(__AVR_ATtiny45__) || defined(__AVR_ATtiny85__)
 #define WDTCSR  WDTCR
 #endif
-    WDTCSR |= _BV(WDIE) | _BV(WDIF); // Watchdog interrupt enable + reset interrupt flag -> needs ISR(WDT_vect)
-    sei();
-    sleep_cpu()
-    ;
-    wdt_disable();
+    // Watchdog interrupt enable + reset interrupt flag -> needs ISR(WDT_vect)
+    uint8_t tWDTCSR = _BV(WDIE) | _BV(WDIF) | (aWatchdogPrescaler & 0x08 ? _WD_PS3_MASK : 0x00) | (aWatchdogPrescaler & 0x07); // handles that the WDP3 bit is in bit 5 of the WDTCSR register,
+    WDTCSR = _BV(WDCE) | _BV(WDE); // clear lock bit for 4 cycles by writing 1 to WDCE AND WDE
+    WDTCSR = tWDTCSR; // set final Value
 }
 
 /*
