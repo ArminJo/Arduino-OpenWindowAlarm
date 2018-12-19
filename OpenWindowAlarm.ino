@@ -39,7 +39,7 @@
 
 #include <Arduino.h>
 
-#define DEBUG // To see serial output with 115200 baud at pin2
+//#define DEBUG // To see serial output with 115200 baud at pin2
 //#define TRACE // To see serial output with 115200 baud at pin2
 //#define ALARM_TEST // start alarm immediately if PB0 / D0 is connected to ground - incompatible with Pullup at 0 bootloader
 
@@ -72,15 +72,16 @@ const uint16_t TEMPERATURE_DELTA_THRESHOLD_DEGREE = 2;
 uint16_t sTemperatureMinimumAfterWindowOpen;
 uint16_t sTemperatureAtWindowOpen;
 bool sOpenWindowDetected = false;
+bool sOpenWindowDetectedOld = false;
 uint8_t sOpenWindowSampleDelayCounter;
 
 /*
  * VCC monitoring
  */
 const uint16_t VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT = 3550; // 3.7 Volt is normal operating voltage
-bool sVCCVoltageTooLow = false;
+bool sVCCVoltageTooLow;
 const uint8_t VCC_MONITORING_DELAY_MIN = 60; // Check VCC every hour
-uint16_t sVCCMonitoringDelayCounter = (VCC_MONITORING_DELAY_MIN * 60) / TEMPERATURE_SAMPLE_SECONDS;
+uint16_t sVCCMonitoringDelayCounter = 1; // 1 -> check first time in setup
 
 //
 // ATMEL ATTINY85
@@ -118,7 +119,7 @@ void initPeriodicSleepWithWatchdog(uint8_t tSleepMode, uint8_t aWatchdogPrescale
 void sleepDelay(uint16_t aSecondsToSleep);
 void delayMilliseconds(unsigned int aMillis);
 uint16_t readADCChannelWithReferenceOversample(uint8_t aChannelNumber, uint8_t aReference, uint8_t aOversampleExponent);
-void checkVCC();
+void checkVCCPeriodically();
 void changeDigisparkClock();
 
 /***********************************************************************************
@@ -207,7 +208,7 @@ void setup() {
     }
 #endif
 
-    checkVCC();
+    checkVCCPeriodically();
 
 // disable digital input buffer to save power
 // do not disable buffer for outputs whose values are read back
@@ -370,7 +371,7 @@ void loop() {
     sVCCMonitoringDelayCounter--;
     if (sVCCMonitoringDelayCounter == 0) {
         sVCCMonitoringDelayCounter = (VCC_MONITORING_DELAY_MIN * 60) / TEMPERATURE_SAMPLE_SECONDS;
-        checkVCC(); // needs 4.5 ms
+        checkVCCPeriodically(); // needs 4.5 ms
     }
 
     delayAndSignalOpenWindowDetectionAndLowVCC();
@@ -488,9 +489,24 @@ void alarm() {
 void delayAndSignalOpenWindowDetectionAndLowVCC() {
     if (sOpenWindowDetected) {
         PWMtone(TONE_PIN, 2200);
-        delayMicroseconds(2000); // 2000 can be heard
+        sOpenWindowDetectedOld = true;
+        delayMicroseconds(2000); // 2000 can be heard as click
         noTone(TONE_PIN);
         delayMicroseconds(20000); // to let the led light longer
+
+    } else if (sOpenWindowDetectedOld) {
+        // closing window just detected -> signal it with 2 clicks
+        sOpenWindowDetectedOld = false; // do it once
+        PWMtone(TONE_PIN, 2200);
+        delayMicroseconds(2000);
+        noTone(TONE_PIN);
+
+        delayMilliseconds(100); // delay between clocks
+
+        PWMtone(TONE_PIN, 2200);
+        delayMicroseconds(2000);
+        noTone(TONE_PIN);
+
     } else if (sVCCVoltageTooLow) {
         PWMtone(TONE_PIN, 1600);
         delayMicroseconds(20000);
@@ -560,15 +576,23 @@ uint16_t getVCCVoltageMillivolt(void) {
     return ((1024L * 1100) / tVCC);
 }
 
-void checkVCC() {
-    uint16_t sVCCVoltageMillivolt = getVCCVoltageMillivolt();
+// needs 4.5 ms
+void checkVCCPeriodically() {
+    sVCCMonitoringDelayCounter--;
+    if (sVCCMonitoringDelayCounter == 0) {
+        uint16_t sVCCVoltageMillivolt = getVCCVoltageMillivolt();
 #ifdef DEBUG
-    writeString(F("VCC="));
-    writeUnsignedInt(sVCCVoltageMillivolt);
-    writeString(F("mV\n"));
+        writeString(F("VCC="));
+        writeUnsignedInt(sVCCVoltageMillivolt);
+        writeString(F("mV\n"));
 #endif
-    if (sVCCVoltageMillivolt < VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT) {
-        sVCCVoltageTooLow = true;
+        if (sVCCVoltageMillivolt < VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT) {
+            sVCCVoltageTooLow = true;
+            sVCCMonitoringDelayCounter = 4; // check every 2 minutes
+        } else {
+            sVCCVoltageTooLow = false;
+            sVCCMonitoringDelayCounter = (VCC_MONITORING_DELAY_MIN * 60) / TEMPERATURE_SAMPLE_SECONDS; // check every hour
+        }
     }
 }
 
