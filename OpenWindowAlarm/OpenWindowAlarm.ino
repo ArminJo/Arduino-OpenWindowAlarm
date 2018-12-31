@@ -63,11 +63,13 @@ const uint8_t OPEN_WINDOW_ALARM_DELAY_MINUTES = 5;
 const uint16_t TEMPERATURE_SAMPLE_SECONDS = 24;  // use multiple of 8
 const uint8_t OPEN_WINDOW_SAMPLES = (OPEN_WINDOW_ALARM_DELAY_MINUTES * 60) / TEMPERATURE_SAMPLE_SECONDS;
 const uint8_t TEMPERATURE_COMPARE_AMOUNT = 2;
-const uint8_t TEMPERATURE_COMPARE_DISTANCE = 8;
+const uint8_t TEMPERATURE_COMPARE_DISTANCE = 8; // 3 minutes and 12 seconds
 // Array to hold enough values to compare TEMPERATURE_COMPARE_AMOUNT values with the same amount of values TEMPERATURE_COMPARE_DISTANCE positions before
 uint16_t sTemperatureArray[(TEMPERATURE_COMPARE_AMOUNT + TEMPERATURE_COMPARE_DISTANCE + TEMPERATURE_COMPARE_AMOUNT)];
 // 1 LSB  = 1 Degree Celsius
 const uint16_t TEMPERATURE_DELTA_THRESHOLD_DEGREE = 2;
+uint16_t sTemperatureNewSum = 0;
+uint16_t sTemperatureOldSum = 0;
 
 uint16_t sTemperatureMinimumAfterWindowOpen;
 uint16_t sTemperatureAtWindowOpen;
@@ -115,6 +117,8 @@ uint8_t sMCUSRStored; // content of MCUSR register at startup
 void PWMtone(uint8_t aPin, unsigned int aFrequency, unsigned long aDurationMillis = 0);
 void delayAndSignalOpenWindowDetectionAndLowVCC();
 void alarm();
+void readTempAndManageHistory();
+void resetHistory();
 void initPeriodicSleepWithWatchdog(uint8_t tSleepMode, uint8_t aWatchdogPrescaler);
 void sleepDelay(uint16_t aSecondsToSleep);
 void delayMilliseconds(unsigned int aMillis);
@@ -234,48 +238,8 @@ void setup() {
  */
 void loop() {
 
-    uint16_t tTemperatureNewSum = 0;
-    uint16_t tTemperatureOldSum = 0;
+    readTempAndManageHistory();
 
-    uint8_t i = (sizeof(sTemperatureArray) / sizeof(uint16_t)) - 1;
-    /*
-     * shift values in temperature history array and insert new one at [0]
-     */
-    while (i >= TEMPERATURE_COMPARE_AMOUNT + TEMPERATURE_COMPARE_DISTANCE) {
-        // shift TEMPERATURE_COMPARE_AMOUNT values to end and sum them up
-        sTemperatureArray[i] = sTemperatureArray[i - 1];
-        tTemperatureOldSum += sTemperatureArray[i - 1];
-        i--;
-    }
-    while (i >= TEMPERATURE_COMPARE_AMOUNT) {
-        // shift values to end
-        sTemperatureArray[i] = sTemperatureArray[i - 1];
-        i--;
-    }
-    while (i > 0) {
-        // shift (TEMPERATURE_COMPARE_AMOUNT - 1) values to end and sum them up
-        sTemperatureArray[i] = sTemperatureArray[i - 1];
-        tTemperatureNewSum += sTemperatureArray[i - 1];
-        i--;
-    }
-
-    /*
-     * Read new Temperature (typical 280 - 320 at 25 C) and add to sum
-     * needs 2 ms
-     */
-    sTemperatureArray[0] = readADCChannelWithReferenceOversample(ADC_TEMPERATURE_CHANNEL_MUX, INTERNAL1V1, 4);
-    tTemperatureNewSum += sTemperatureArray[0];
-
-#ifdef DEBUG
-    // needs 4.4 ms
-    writeString(F("Temp="));
-    writeUnsignedInt(sTemperatureArray[0]);
-    writeString(F(" Old="));
-    writeUnsignedInt(tTemperatureOldSum);
-    writeString(F(" New="));
-    writeUnsignedInt(tTemperatureNewSum);
-    write1Start8Data1StopNoParity('\n');
-#endif
     // activate LED after reading to signal it. Do it here to reduce delay below.
     digitalWrite(LED_PIN, 1);
 
@@ -295,9 +259,7 @@ void loop() {
 #ifdef DEBUG
         writeString(F("Detected porting to a colder place -> reset\n"));
 #endif
-        for (i = 0; i < (sizeof(sTemperatureArray) / sizeof(uint16_t)) - 1; ++i) {
-            sTemperatureArray[i] = 0;
-        }
+        resetHistory();
     } else {
 
         if (!sOpenWindowDetected) {
@@ -305,14 +267,14 @@ void loop() {
              * Check if window just opened
              */
             // tTemperatureOldSum can be 0 -> do not use tTemperatureNewSum < tTemperatureOldSum - (TEMPERATURE_DELTA_THRESHOLD_DEGREE * TEMPERATURE_COMPARE_AMOUNT)
-            if (tTemperatureNewSum + (TEMPERATURE_DELTA_THRESHOLD_DEGREE * TEMPERATURE_COMPARE_AMOUNT) < tTemperatureOldSum) {
+            if (sTemperatureNewSum + (TEMPERATURE_DELTA_THRESHOLD_DEGREE * TEMPERATURE_COMPARE_AMOUNT) < sTemperatureOldSum) {
 #ifdef DEBUG
                 writeString(F("Detected window just opened -> check again in "));
                 writeUnsignedByte(OPEN_WINDOW_ALARM_DELAY_MINUTES);
                 writeString(F(" minutes\n"));
 #endif
-                sTemperatureMinimumAfterWindowOpen = tTemperatureNewSum;
-                sTemperatureAtWindowOpen = tTemperatureNewSum;
+                sTemperatureMinimumAfterWindowOpen = sTemperatureNewSum;
+                sTemperatureAtWindowOpen = sTemperatureNewSum;
                 sOpenWindowDetected = true;
                 sOpenWindowSampleDelayCounter = 0;
             }
@@ -321,19 +283,17 @@ void loop() {
             /*
              * Check if window already closed -> start a new detection
              */
-            if (tTemperatureNewSum > (sTemperatureMinimumAfterWindowOpen + TEMPERATURE_COMPARE_AMOUNT)) {
+            if (sTemperatureNewSum > (sTemperatureMinimumAfterWindowOpen + TEMPERATURE_COMPARE_AMOUNT)) {
                 sOpenWindowDetected = false;
 #ifdef DEBUG
                 writeString(F("Detected window already closed -> start again\n"));
 #endif
                 // reset history in order to avoid a new detection next sample, since tTemperatureNewSum may still be lower than tTemperatureOldSum
-                for (i = 0; i < (sizeof(sTemperatureArray) / sizeof(uint16_t)) - 1; ++i) {
-                    sTemperatureArray[i] = 0;
-                }
+                resetHistory();
             } else {
-                if (tTemperatureNewSum < sTemperatureMinimumAfterWindowOpen) {
+                if (sTemperatureNewSum < sTemperatureMinimumAfterWindowOpen) {
                     // set new minimum
-                    sTemperatureMinimumAfterWindowOpen = tTemperatureNewSum;
+                    sTemperatureMinimumAfterWindowOpen = sTemperatureNewSum;
                 }
 
                 /*
@@ -344,7 +304,7 @@ void loop() {
                     /*
                      * After delay, check if still open - Temperature must be 1 degree lower than temperature at time of open detection
                      */
-                    if (tTemperatureNewSum <= sTemperatureAtWindowOpen - TEMPERATURE_COMPARE_AMOUNT) {
+                    if (sTemperatureNewSum <= sTemperatureAtWindowOpen - TEMPERATURE_COMPARE_AMOUNT) {
                         /*
                          * Window still open -> ALARM
                          */
@@ -445,6 +405,9 @@ void playAlarmSignalSeconds(uint16_t aSecondsToPlay) {
     writeString(F(" seconds\n"));
 #endif
     uint16_t tCounter = (aSecondsToPlay * 10) / 13; // == ... * 1000 (ms per second) / (1300ms for a loop)
+    if (tCounter == 0) {
+        tCounter = 1;
+    }
     while (tCounter-- != 0) {
         // activate LED
         digitalWrite(LED_PIN, 1);
@@ -460,12 +423,86 @@ void playAlarmSignalSeconds(uint16_t aSecondsToPlay) {
     }
 }
 
+void resetHistory() {
+    for (uint8_t i = 0; i < (sizeof(sTemperatureArray) / sizeof(uint16_t)) - 1; ++i) {
+        sTemperatureArray[i] = 0;
+    }
+}
+void readTempAndManageHistory() {
+    sTemperatureNewSum = 0;
+    sTemperatureOldSum = 0;
+    uint8_t tIndex = (sizeof(sTemperatureArray) / sizeof(uint16_t)) - 1;
+    /*
+     * shift values in temperature history array and insert new one at [0]
+     */
+    while (tIndex >= TEMPERATURE_COMPARE_AMOUNT + TEMPERATURE_COMPARE_DISTANCE) {
+        // shift TEMPERATURE_COMPARE_AMOUNT values to end and sum them up
+        sTemperatureArray[tIndex] = sTemperatureArray[tIndex - 1];
+        sTemperatureOldSum += sTemperatureArray[tIndex - 1];
+        tIndex--;
+    }
+    while (tIndex >= TEMPERATURE_COMPARE_AMOUNT) {
+        // shift values to end
+        sTemperatureArray[tIndex] = sTemperatureArray[tIndex - 1];
+        tIndex--;
+    }
+    while (tIndex > 0) {
+        // shift (TEMPERATURE_COMPARE_AMOUNT - 1) values to end and sum them up
+        sTemperatureArray[tIndex] = sTemperatureArray[tIndex - 1];
+        sTemperatureNewSum += sTemperatureArray[tIndex - 1];
+        tIndex--;
+    }
+    /*
+     * Read new Temperature (typical 280 - 320 at 25 C) and add to sum
+     * needs 2 ms
+     */
+    sTemperatureArray[0] = readADCChannelWithReferenceOversample(ADC_TEMPERATURE_CHANNEL_MUX, INTERNAL1V1, 4);
+    sTemperatureNewSum += sTemperatureArray[0];
+
+#ifdef DEBUG
+    // needs 4.4 ms
+    writeString(F("Temp="));
+    writeUnsignedInt(sTemperatureArray[0]);
+    writeString(F(" Old="));
+    writeUnsignedInt(sTemperatureOldSum);
+    writeString(F(" New="));
+    writeUnsignedInt(sTemperatureNewSum);
+    write1Start8Data1StopNoParity('\n');
+#endif
+}
+
 /*
- * Generates a 2200 | 1100 Hertz tone signal for 10 minutes and then play it 10 seconds with intervals starting from 24 seconds up to 5 minutes.
+ * Generates a 2200 | 1100 Hertz tone signal for 600 seconds / 10 minutes and then play it 10 seconds with intervals starting from 24 seconds up to 5 minutes.
+ * After 2 minutes the temperature is checked for the remaining 8 minutes if temperature is increasing in order to detect a closed window.
  */
 void alarm() {
 
-    playAlarmSignalSeconds(600);  // 600 seconds / 10 Minutes
+    // First 120 seconds
+    playAlarmSignalSeconds(120);
+    // after 80 seconds the new temperature is stable
+
+    // reset history
+    for (uint8_t j = 0; j < (sizeof(sTemperatureArray) / sizeof(uint16_t)) - 1; ++j) {
+        sTemperatureArray[j] = 0;
+    }
+
+    // 480 seconds
+    for (uint8_t i = 0; i < 16; ++i) {
+        readTempAndManageHistory();
+        /*
+         * Check if history is completely filled and if temperature is rising
+         */
+        if (sTemperatureArray[(sizeof(sTemperatureArray) / sizeof(uint16_t)) - 1] != 0
+                && sTemperatureNewSum > sTemperatureOldSum + (TEMPERATURE_DELTA_THRESHOLD_DEGREE * TEMPERATURE_COMPARE_AMOUNT)) {
+#ifdef DEBUG
+            writeString(F("Alarm - detected window already closed -> start again\n"));
+#endif
+            sOpenWindowDetected = false;
+            resetHistory();
+            return;
+        }
+        playAlarmSignalSeconds(30);
+    }
 
 #ifdef DEBUG
     writeString(F("After 10 minutes alarm now play it for 10 s with 24 to 600 s delay\n"));
@@ -473,6 +510,11 @@ void alarm() {
 
     uint16_t tDelay = 24;
     while (true) {
+#ifdef DEBUG
+        writeString(F("Alarm pause for "));
+        writeUnsignedInt(tDelay);
+        writeString(F(" seconds\n"));
+#endif
         sleepDelay(tDelay); // Start with 24 seconds
         playAlarmSignalSeconds(10);
         noTone(TONE_PIN);
@@ -483,7 +525,7 @@ void alarm() {
 }
 
 /*
- * Delay to flash LED only for a short period to save power.
+ * Flash LED only for a short period to save power.
  * If open window detected, increase pulse length to give a visual feedback
  */
 void delayAndSignalOpenWindowDetectionAndLowVCC() {
@@ -495,7 +537,7 @@ void delayAndSignalOpenWindowDetectionAndLowVCC() {
         delayMicroseconds(20000); // to let the led light longer
 
     } else if (sOpenWindowDetectedOld) {
-        // closing window just detected -> signal it with 2 clicks
+// closing window just detected -> signal it with 2 clicks
         sOpenWindowDetectedOld = false; // do it once
         PWMtone(TONE_PIN, 2200);
         delayMicroseconds(2000);
@@ -547,7 +589,7 @@ uint16_t readADCChannelWithReferenceOversample(uint8_t aChannelNumber, uint8_t a
         loop_until_bit_is_set(ADCSRA, ADIF);
 
         ADCSRA |= _BV(ADIF); // clear bit to recognize conversion has finished
-        // Add value
+// Add value
         tSumValue += ADCL | (ADCH << 8);
 //        tSumValue += (ADCH << 8) | ADCL; // this does NOT work!
     }
@@ -556,16 +598,16 @@ uint16_t readADCChannelWithReferenceOversample(uint8_t aChannelNumber, uint8_t a
 }
 
 uint16_t getVCCVoltageMillivolt(void) {
-    // use AVCC with external capacitor at AREF pin as reference
+// use AVCC with external capacitor at AREF pin as reference
     uint8_t tOldADMUX = ADMUX;
     /*
      * Must wait >= 200 us if reference has to be switched to VSS
      * Must wait >= 70 us if channel has to be switched to ADC_1_1_VOLT_CHANNEL_MUX
      */
     if ((ADMUX & (INTERNAL << SHIFT_VALUE_FOR_REFERENCE)) || ((ADMUX & 0x0F) != ADC_1_1_VOLT_CHANNEL_MUX)) {
-        // switch AREF
+// switch AREF
         ADMUX = ADC_1_1_VOLT_CHANNEL_MUX | (DEFAULT << SHIFT_VALUE_FOR_REFERENCE);
-        // and wait for settling
+// and wait for settling
         delayMicroseconds(400); // experimental value is > 200 us
     }
     uint16_t tVCC = readADCChannelWithReferenceOversample(ADC_1_1_VOLT_CHANNEL_MUX, DEFAULT, 2);
@@ -576,7 +618,10 @@ uint16_t getVCCVoltageMillivolt(void) {
     return ((1024L * 1100) / tVCC);
 }
 
-// needs 4.5 ms
+/*
+ * called every hour
+ * needs 4.5 ms
+ */
 void checkVCCPeriodically() {
     sVCCMonitoringDelayCounter--;
     if (sVCCMonitoringDelayCounter == 0) {
@@ -588,10 +633,10 @@ void checkVCCPeriodically() {
 #endif
         if (sVCCVoltageMillivolt < VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT) {
             sVCCVoltageTooLow = true;
-            sVCCMonitoringDelayCounter = 4; // check every 2 minutes
+            sVCCMonitoringDelayCounter = 4; // VCC too low -> check every 2 minutes
         } else {
             sVCCVoltageTooLow = false;
-            sVCCMonitoringDelayCounter = (VCC_MONITORING_DELAY_MIN * 60) / TEMPERATURE_SAMPLE_SECONDS; // check every hour
+            sVCCMonitoringDelayCounter = (VCC_MONITORING_DELAY_MIN * 60) / TEMPERATURE_SAMPLE_SECONDS; // VCC OK -> check every hour
         }
     }
 }
@@ -611,7 +656,7 @@ void initPeriodicSleepWithWatchdog(uint8_t tSleepMode, uint8_t aWatchdogPrescale
 #if defined(__AVR_ATtiny25__) || defined(__AVR_ATtiny45__) || defined(__AVR_ATtiny85__)
 #define WDTCSR  WDTCR
 #endif
-    // Watchdog interrupt enable + reset interrupt flag -> needs ISR(WDT_vect)
+// Watchdog interrupt enable + reset interrupt flag -> needs ISR(WDT_vect)
     uint8_t tWDTCSR = _BV(WDIE) | _BV(WDIF) | (aWatchdogPrescaler & 0x08 ? _WD_PS3_MASK : 0x00) | (aWatchdogPrescaler & 0x07); // handles that the WDP3 bit is in bit 5 of the WDTCSR register,
     WDTCSR = _BV(WDCE) | _BV(WDE); // clear lock bit for 4 cycles by writing 1 to WDCE AND WDE
     WDTCSR = tWDTCSR; // set final Value

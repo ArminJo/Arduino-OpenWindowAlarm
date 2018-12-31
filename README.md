@@ -25,6 +25,11 @@ as board in the *Tools* menu in order to get the right timing.
 ## Programming the Digispark board
 Create a new sketch with *File/New* and name it e.g. OpenWindowAlarm
 Copy the code from [OpenWindowAlarm.ino](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/OpenWindowAlarm.ino)
+
+OR
+
+Download and extract the repository. Open the sketch with File -> Open... and select the OpenWindowAlarm folder. 
+
 Compile and upload it. Keep in mind, that upload can not work if the speaker is connected.
 If everything worked, the build in LED of the Digispark will blink 5 times and then start flashing after 8 seconds with a 24 second interval.
 
