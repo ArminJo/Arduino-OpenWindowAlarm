@@ -8,16 +8,19 @@
  * A low battery (below 3.55 Volt) is indicated by beeping and flashing LED every 24 seconds. Only the beep (not the flash) is significantly longer than at open window detection.
  *
  * Detailed description:
- * Open window is detected after `TEMPERATURE_COMPARE_AMOUNT * TEMPERATURE_SAMPLE_SECONDS` seconds of reading a temperature
- * which value is `TEMPERATURE_DELTA_THRESHOLD_DEGREE` lower than the temperature `TEMPERATURE_COMPARE_DISTANCE * TEMPERATURE_SAMPLE_SECONDS` seconds before.
- * The delay is implemented by 3 times sleeping at `SLEEP_MODE_PWR_DOWN` for a period of 8 seconds in order to reduce power consumption.
+ * Open window is detected after `TEMPERATURE_COMPARE_AMOUNT * TEMPERATURE_SAMPLE_SECONDS` (48) seconds of reading a temperature
+ * which value is `TEMPERATURE_DELTA_THRESHOLD_DEGREE` (2) lower than the temperature `TEMPERATURE_COMPARE_DISTANCE * TEMPERATURE_SAMPLE_SECONDS` (192 -> 3 minutes and 12 seconds) seconds before.
+ * The delay is implemented by 3 times sleeping at `SLEEP_MODE_PWR_DOWN` for a period of 8 seconds to reduce power consumption.
  * Detection of an open window is indicated by a longer 20ms blink and a short click every 24 seconds.
- * The internal sensor has therefore 3 minutes time to adjust to the outer temperature, to get even small changes in temperature.
- * The greater the temperature change the earlier the change of sensor value and detection of an open window.
- * After open window detection Alarm is activated after `OPEN_WINDOW_MINUTES` if actual temperature is not higher than the minimum temperature (+ 1) i.e. the window is not closed yet.
- *
- * Every `VCC_MONITORING_DELAY_MIN` minutes the battery voltage is measured. A low battery (below `VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT` Millivolt)
+ * Therefore, the internal sensor has 3 minutes time to adjust to the outer temperature, to get even small changes in temperature.
+ * The greater the temperature change the earlier the sensor value will change and detect an open window.
+ * After open window detection Alarm is activated after `OPEN_WINDOW_ALARM_DELAY_MINUTES` (5).
+ *   The alarm will not sound the current temperature is greater than the minimum measured temperature (+ 1) i.e. the window has been closed already.
+ * Every `VCC_MONITORING_DELAY_MIN` (60) minutes the battery voltage is measured. A battery voltage below `VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT` (3550) Millivolt
  * is indicated by beeping and flashing LED every 24 seconds. Only the beep (not the flash) is significantly longer than at open window detection.
+ *
+ * The initial alarm lasts for 10 minutes. After this it is activated for a period 10 seconds with a increasing break from 24 seconds up to 5 minutes.
+ *
  *
  * Power consumption:
  * Power consumption is 6uA at sleep and 2.8 mA at at 1MHz active.
