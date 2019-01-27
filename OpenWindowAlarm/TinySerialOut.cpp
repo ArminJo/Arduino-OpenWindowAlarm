@@ -179,6 +179,10 @@ void writeBinary(uint8_t aByte) {
 #endif
 }
 
+void writeChar(uint8_t aChar) {
+    writeBinary(aChar);
+}
+
 void writeUnsignedByte(uint8_t aByte) {
     char tStringBuffer[4];
     utoa(aByte, tStringBuffer, 10);

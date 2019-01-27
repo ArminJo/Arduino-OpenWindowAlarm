@@ -3,19 +3,21 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 Place this on a windowsill and you will be alarmed if you leave the window open longer than five minutes.
-It senses the falling temperature and thus works best in winter. It requires only 0.006 milliampere. This means one battery or power bank will last the whole winter.
-![OpenWindowAlarm on a windowsill](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/OpenWindowAlarmAction.jpg)
+It senses the falling temperature and thus works best in winter. It requires only 0.006 milliampere. This means one battery will last the whole winter.
+![OpenWindowAlarm on a windowsill](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/OpenWindowAlarm.jpg)
 OpenWindowAlarm on a windowsill
 
 # Function
 Every 24 seconds a reading is taken of the ATtiny internal temperature sensor which has a resolution of 1 degree.
 If temperature is lower than the "old" temperature value an alarm is issued five minutes later if by then the condition still holds true.
 A detection of an open window is indicated by a longer 20ms blink and a short click every 24 seconds.
-A low battery (below 3.55 Volt) is indicated by beeping and flashing the LED every 24 seconds. Only the beep (not the flash) is significantly longer than the beep for an open window detection.
+A low battery is indicated by beeping and flashing the LED every 24 seconds. Only the beep (not the flash) is significantly longer than the beep for an open window detection.
 
 # How to make your own
-The parts you need: At the bottom you see a battery charger and 2 different batteries. One is from a tiny quadrocopter, the other from an old mobile phone. You can get the Li-Ion Battery Charger on eBay for 1€.
-![Parts](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/PartsAll_annotated.jpg)
+The parts you need
+![Parts](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/Parts.jpg)
+![Battery Case](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/BatteryCase.jpg)
+
 
 ## Programming the Digispark board
 ### Installation of Arduino IDE
@@ -41,32 +43,17 @@ Before power reduction changes
 We now have a Digispark board that uses 6/9.5 mA at 3,7/5 Volt. With a battery of 2000mAh it will run for 9 days. But it is possible to reduce power consumption to 6-9 µA in 3 Steps.
 1. Disabling the power LED by breaking the copper wire that connects the power LED to the diode with a knife or removing / disabling the 102 resistor saves 2/2.2 mA.
 2. Removing the VIN voltage regulator saves 1.5/3.8 mA. We now use 2.5/3.5 mA at 3.7/5 Volt. The 2000mAh battery now lasts for 23 days.
-3. Disconnecting the USB Pullup resistor (marked 152) from 5 Volt (VCC) saves the 2.5/3.5 mA. Disconnect it by breaking the copper wire on the side of the resistor that points to the ATTiny. **BUT** this also disables the USB interface and in turn the possibility to program the Digispark board via USB.
+3. Disconnecting the USB Pullup resistor (marked 152) from 5 Volt (VCC) saves the 2.5/3.5 mA. Disconnect it by breaking the copper wire on the side of the resistor that points to the ATTiny.<br/>**BUT** this also disables the USB interface and in turn the possibility to program the Digispark board via USB.
 
-   There is a solution: 
-   If you use a battery then just connect the resistor directly to the USB 5 Volt that is easily available at one side of the diode. 
+   **There is a solution:**<br/>
+   If you use a battery, then just connect the resistor directly to the USB 5 Volt that is easily available at one side of the diode. 
    The correct side of the diode can be found by using a continuity tester. One side of this diode is connected to pin 8 of the ATtiny (VCC).
    The other side is connected to the USB 5V. 
    
-Now the USB pullup resistor is only activated if the Digispark board is connected to USB e.g. during programming and the board consumes 6-9 µA during regular operation.
+Now the USB pullup resistor is only activated if the Digispark board is connected to USB e.g. during programming and the board consumes 5-9 µA during regular operation.
    
 After power reduction changes
-![Final power reduction](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/Final-Version-Detail_annotated.jpg)
-
-## Power bank as supply
-**Only power banks without an auto switch-off function (oficially not allowed to sell in the EU) will work for this circuit.**
-
-If you want to supply Digispark board from a power bank, then the resistor is still active and consumes power.
-   
-Again there is a solution:
-You have to flush a new bootloader with the [Burn_upgrade_micronucleus-t85_pullup_at_0.cmd](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/Burn_upgrade_micronucleus-t85_pullup_at_0.cmd) script from the repository and **then** connect the resistor to P0 (IC-Pin4).
-   
-**OR**
-
-You program your Digispark board only once and then disconnect the resistor. Do not forget to remove the resistor **AFTER** programming the board. The board now consumes 6-9 µA which is negligable compared to the 100 µA internal loss of the power bank itself. This setup allows for more than 2 years of usage with a 2000mAh power bank **without auto switch off**.
-   
-After power reduction changes for the power bank
-![Power reduction for USB power bank](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/OpenWindowAlarmPBDetail_annotated.jpg)
+![Final power reduction](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/Final-Version-Detail.jpg)
 
 ## Reset button
 If you do not want to remove power to reset the alarm connect a reset button between PB5 and ground. 

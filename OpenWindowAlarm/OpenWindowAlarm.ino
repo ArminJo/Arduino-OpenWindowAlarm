@@ -5,7 +5,7 @@
  * Every 24 seconds a sample is taken of the ATtiny internal temperature sensor which has a resolution of 1 degree.
  * If temperature is lower than "old" temperature value, then an alarm is issued 5 minutes later, if "the condition still holds".
  * Detection of an open window is indicated by a longer 20ms blink and a short click every 24 seconds.
- * A low battery (below 3.55 Volt) is indicated by beeping and flashing LED every 24 seconds. Only the beep (not the flash) is significantly longer than at open window detection.
+ * A low battery (below 3.55 Volt for LiPo) is indicated by beeping and flashing LED every 24 seconds. Only the beep (not the flash) is significantly longer than at open window detection.
  *
  * Detailed description:
  * Open window is detected after `TEMPERATURE_COMPARE_AMOUNT * TEMPERATURE_SAMPLE_SECONDS` (48) seconds of reading a temperature
@@ -16,11 +16,14 @@
  * The greater the temperature change the earlier the sensor value will change and detect an open window.
  * After open window detection Alarm is activated after `OPEN_WINDOW_ALARM_DELAY_MINUTES` (5).
  *   The alarm will not sound the current temperature is greater than the minimum measured temperature (+ 1) i.e. the window has been closed already.
- * Every `VCC_MONITORING_DELAY_MIN` (60) minutes the battery voltage is measured. A battery voltage below `VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT` (3550) Millivolt
- * is indicated by beeping and flashing LED every 24 seconds. Only the beep (not the flash) is significantly longer than at open window detection.
+ *
+ * At startup, the battery voltage is measured and recognized if the module is operating on one LIPO battery or two standard AA / AAA batteries.
+ * Every `VCC_MONITORING_DELAY_MIN` (60) minutes the battery voltage is measured. A battery voltage below `VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT_LIPO` (3550) Millivolt
+ * or below `VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT_STANDARD` (2350) mV is indicated by beeping and flashing LED every 24 seconds. Only the beep (not the flash) is significantly longer than at open window detection.
  *
  * The initial alarm lasts for 10 minutes. After this it is activated for a period 10 seconds with a increasing break from 24 seconds up to 5 minutes.
  *
+ * After power up, the inactive settling time is 5 minutes or additionally 4:15 (or 8:30) minutes if the board is getting colder during the settling time, to avoid false alarms at power up.
  *
  * Power consumption:
  * Power consumption is 6uA at sleep and 2.8 mA at at 1MHz active.
@@ -42,10 +45,12 @@
 
 #include <Arduino.h>
 
-//#define DEBUG // To see serial output with 115200 baud at pin2
-//#define TRACE // To see serial output with 115200 baud at pin2
-//#define ALARM_TEST // start alarm immediately if PB0 / D0 is connected to ground - incompatible with Pullup at 0 bootloader
-
+//#define DEBUG // To see serial output with 115200 baud at P2
+//#define TRACE // To see more serial output at startup with 115200 baud at P2
+//#define ALARM_TEST // start alarm immediately if PB0 / P0 is connected to ground - incompatible with Pullup at 0 bootloader for power bank
+#ifdef TRACE
+#define DEBUG
+#endif
 #ifdef DEBUG
 #include "TinySerialOut.h"
 #endif
@@ -83,10 +88,15 @@ uint8_t sOpenWindowSampleDelayCounter;
 /*
  * VCC monitoring
  */
-const uint16_t VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT = 3550; // 3.7 Volt is normal operating voltage
+const uint16_t VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT_LIPO = 3550; // 3.7 Volt is normal operating voltage if powered by a LiPo battery
+const uint16_t VCC_VOLTAGE_LIPO_DETECTION = 3400; // Above 3.4 Volt we assume that a LIPO battery is attached, below we assume a CR2032 or two AA or AAA batteries attached.
+const uint16_t VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT_STANDARD = 2350; // 3.0 Volt is normal operating voltage if powered by a CR2032 or two AA or AAA batteries.
+
+uint16_t sVCCVoltageMillivolt;
 bool sVCCVoltageTooLow;
+bool sLIPOSupplyDetected;
 const uint8_t VCC_MONITORING_DELAY_MIN = 60; // Check VCC every hour
-uint16_t sVCCMonitoringDelayCounter = 1; // 1 -> check first time in setup
+uint16_t sVCCMonitoringDelayCounter; // counter to enable different periods of VCC monitoring, because this costs extra power.
 
 //
 // ATMEL ATTINY85
@@ -126,6 +136,7 @@ void initPeriodicSleepWithWatchdog(uint8_t tSleepMode, uint8_t aWatchdogPrescale
 void sleepDelay(uint16_t aSecondsToSleep);
 void delayMilliseconds(unsigned int aMillis);
 uint16_t readADCChannelWithReferenceOversample(uint8_t aChannelNumber, uint8_t aReference, uint8_t aOversampleExponent);
+uint16_t getVCCVoltageMillivolt(void);
 void checkVCCPeriodically();
 void changeDigisparkClock();
 
@@ -190,9 +201,13 @@ void setup() {
      */
     readADCChannelWithReferenceOversample(ADC_TEMPERATURE_CHANNEL_MUX, INTERNAL1V1, 0);
 
+    /*
+     * Signal power on with o tone. This is done only after power on but NOT after reset.
+     */
     if (sMCUSRStored & (1 << PORF)) {
-        PWMtone(TONE_PIN, 2200, 100); // signal power on. Not entered after reset.
+        PWMtone(TONE_PIN, 2200, 100);
     }
+
     /*
      * Blink LED at startup to show OPEN_WINDOW_MINUTES
      */
@@ -215,6 +230,17 @@ void setup() {
     }
 #endif
 
+    /*
+     * Check VCC and decide if LIPO or 2 standard batteries / 1 button cell attached
+     */
+    sVCCVoltageMillivolt = getVCCVoltageMillivolt();
+    if (sVCCVoltageMillivolt > VCC_VOLTAGE_LIPO_DETECTION) {
+        sLIPOSupplyDetected = true;
+    } else {
+        sLIPOSupplyDetected = false;
+    }
+
+    sVCCMonitoringDelayCounter = 1; // 1 -> check directly now
     checkVCCPeriodically();
 
 // disable digital input buffer to save power
@@ -628,13 +654,16 @@ uint16_t getVCCVoltageMillivolt(void) {
 void checkVCCPeriodically() {
     sVCCMonitoringDelayCounter--;
     if (sVCCMonitoringDelayCounter == 0) {
-        uint16_t sVCCVoltageMillivolt = getVCCVoltageMillivolt();
+        sVCCVoltageMillivolt = getVCCVoltageMillivolt();
 #ifdef DEBUG
         writeString(F("VCC="));
         writeUnsignedInt(sVCCVoltageMillivolt);
-        writeString(F("mV\n"));
+        writeString(F("mV LIPO="));
+        writeByte(sLIPOSupplyDetected);
+        writeChar('\n');
 #endif
-        if (sVCCVoltageMillivolt < VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT) {
+        if ((sLIPOSupplyDetected && sVCCVoltageMillivolt < VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT_LIPO)
+                || (!sLIPOSupplyDetected && sVCCVoltageMillivolt < VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT_STANDARD)) {
             sVCCVoltageTooLow = true;
             sVCCMonitoringDelayCounter = 4; // VCC too low -> check every 2 minutes
         } else {
