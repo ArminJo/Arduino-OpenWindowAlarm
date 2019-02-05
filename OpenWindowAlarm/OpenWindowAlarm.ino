@@ -106,7 +106,7 @@ uint16_t sVCCMonitoringDelayCounter; // counter to enable different periods of V
 //   Tone - ADC3/PCINT3 (D3) PB3  2|    |7  PB2 (D2) INT0/ADC1 - TX Debug output
 //   Tone inv.   - ADC2 (D4) PB4  3|    |6  PB1 (D1) MISO/DO/AIN1/OC0B/OC1A/PCINT1 - (Digispark) LED
 //                           GND  4|    |5  PB0 (D0) OC0A/AIN0 - Alarm Test if connected to ground
-//
+//                                 +----+
 
 #define LED_PIN  PB1
 #define TONE_PIN PB4

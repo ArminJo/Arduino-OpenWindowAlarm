@@ -1,6 +1,11 @@
 # OpenWindowAlarm
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![Build Status](https://travis-ci.org/ArminJo/Arduino-OpenWindowAlarm.svg?branch=master)](https://travis-ci.org/ArminJo/Arduino-OpenWindowAlarm)
+
+[Youtube video](https://youtu.be/6l_QOM59nyc)
+
+[Instructable](https://www.instructables.com/id/Arduino-Open-Window-Detector-for-Winter/)
 
 Place this on a windowsill and you will be alarmed if you leave the window open longer than five minutes.
 It senses the falling temperature and thus works best in winter. It requires only 0.006 milliampere. This means one battery will last the whole winter.
@@ -65,9 +70,11 @@ Loudspeaker disassembly part 1
 Loudspeaker disassembly part 2
 ![Loudspeaker disassembly](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/Loudspeaker2.jpg)
 
-OpenWindowAlarm circuit with battery
+OpenWindowAlarm circuit with AAA batteries
 ![OpenWindowAlarm circuit with battery](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/Final-Version.jpg)
 
+OpenWindowAlarm circuit with LiPo battery
+![OpenWindowAlarm circuit with battery](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/Final-VersionLiPo.jpg)
 # Placement
 To use the board place it on a windowsill and connect it to a battery or USB power bank.
 If the temperature on the sill is lower than the temperature where the board was originally located it will take an additional 5 Minutes to intelligently adopt to the new start value.
@@ -83,4 +90,7 @@ If the temperature on the sill is lower than the temperature where the board was
 * Every `VCC_MONITORING_DELAY_MIN` (60) minutes the battery voltage is measured. A battery voltage below `VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT` (3550) Millivolt is indicated by beeping and flashing the LED every 24 seconds. Only the beep (not the flash) is significantly longer than the beep for an open window detection.
 * The initial alarm lasts for 10 minutes. After this it is activated for a period 10 seconds with a increasing break from 24 seconds up to 5 minutes. 
 
+## Travis CI
+The FrequencyDetector library examples are built on Travis CI for the following boards:
 
+- Digispark ATTiny85

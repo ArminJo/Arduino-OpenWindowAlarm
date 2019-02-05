@@ -1,0 +1,45 @@
+language: c
+sudo: false
+cache:
+  directories:
+  - ~/arduino_ide
+  - ~/.arduino15/packages/
+git:
+  depth: false
+  quiet: true
+env:
+  global:
+  - PRETTYNAME="Open Window Alarm"
+  - CLI_VERSION=latest
+before_install:
+- echo "Downloading latest CLI version of the Arduino IDE..."
+- wget http://downloads.arduino.cc/arduino-cli/arduino-cli-$CLI_VERSION-linux64.tar.bz2
+- echo "Extracting the Arduino IDE..."
+- tar xf arduino-cli-$CLI_VERSION-linux64.tar.bz2
+- echo "Moving Arduino IDE..."
+- mkdir -p $HOME/bin
+- mv arduino-cli-*-linux64 $HOME/bin/arduino-cli
+- export PATH=$PATH:$HOME/bin
+#- echo $PWD
+#- ls -la
+- echo "Update platform indexes..."
+# parameter is needed :-(
+- arduino-cli core update-index --config-file ./.cli-config.yml
+- echo "Install board..."
+# parameter is needed :-(
+- arduino-cli core install digistump:avr --config-file ./.cli-config.yml
+- arduino-cli core install ATTinyCore:avr --config-file ./.cli-config.yml
+- echo "Show all boards now available..."
+- arduino-cli board listall
+install:
+- mkdir -p $HOME/Arduino/libraries
+- ln -s $PWD $HOME/Arduino/libraries/.
+script:
+# 1MHz ATiny
+# Digispark is missing line for recipe.output.tmp_file in boards.txt
+#- arduino-cli compile --debug --verbose --warnings all --fqbn digistump:avr:digispark-tiny1 OpenWindowAlarm 
+- arduino-cli compile --verbose --warnings all --fqbn ATTinyCore:avr:attinyx5 OpenWindowAlarm 
+notifications:
+  email:
+    on_success: always
+    on_failure: always
