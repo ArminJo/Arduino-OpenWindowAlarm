@@ -418,7 +418,7 @@ void changeDigisparkClock() {
  * Like tone(), but use OCR1B (PB4) + !OCR1B (PB3)
  */
 void PWMtone(uint8_t aPin, unsigned int aFrequency, unsigned long aDurationMillis) {
-    tone(aPin, aFrequency / 2, aDurationMillis); // specify half frequency -> PWM doubles it
+    tone(aPin, (unsigned long) aFrequency / 2, aDurationMillis); // specify half frequency -> PWM doubles it
     TCCR1 = TCCR1 & 0x0F; // reset mode and disconnect OC1A pins, keep only prescaler
     GTCCR = (1 << PWM1B) | (1 << COM1B0); // Switch to PWM Mode with OCR1B (PB4) + !OCR1B (PB3) outputs enabled
     OCR1B = OCR1C / 2; // set PWM to 50%
