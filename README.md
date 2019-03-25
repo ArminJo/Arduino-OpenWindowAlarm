@@ -88,7 +88,9 @@ If the temperature on the sill is lower than the temperature where the board was
 * After open window detection Alarm is activated after `OPEN_WINDOW_ALARM_DELAY_MINUTES` (5).
     The alarm will not sound if `OPEN_WINDOW_ALARM_DELAY_MINUTES` (5) after detecting an open window the current temperature is greater than the minimum measured temperature (+ 1) i.e. the window has been closed already.
 * Every `VCC_MONITORING_DELAY_MIN` (60) minutes the battery voltage is measured. A battery voltage below `VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT` (3550) Millivolt is indicated by beeping and flashing the LED every 24 seconds. Only the beep (not the flash) is significantly longer than the beep for an open window detection.
-* The initial alarm lasts for 10 minutes. After this it is activated for a period 10 seconds with a increasing break from 24 seconds up to 5 minutes. 
+* The initial alarm lasts for 10 minutes. After this it is activated for a period 10 seconds with a increasing break from 24 seconds up to 5 minutes.
+* After power up or reset, the inactive settling time is 5 minutes. 4:15 (or 8:30) minutes are added if the board is getting colder during the settling time, to avoid false alarms after boot.
+
 
 ## Travis CI
 The FrequencyDetector library examples are built on Travis CI for the following boards:

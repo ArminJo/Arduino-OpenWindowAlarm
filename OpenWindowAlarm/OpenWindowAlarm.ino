@@ -23,7 +23,7 @@
  *
  * The initial alarm lasts for 10 minutes. After this it is activated for a period 10 seconds with a increasing break from 24 seconds up to 5 minutes.
  *
- * After power up, the inactive settling time is 5 minutes or additionally 4:15 (or 8:30) minutes if the board is getting colder during the settling time, to avoid false alarms at power up.
+ * After power up or reset, the inactive settling time is 5 minutes or additionally 4:15 (or 8:30) minutes if the board is getting colder during the settling time, to avoid false alarms after boot.
  *
  * Power consumption:
  * Power consumption is 6uA at sleep and 2.8 mA at at 1MHz active.
@@ -130,6 +130,7 @@ uint8_t sMCUSRStored; // content of MCUSR register at startup
 void PWMtone(uint8_t aPin, unsigned int aFrequency, unsigned long aDurationMillis = 0);
 void delayAndSignalOpenWindowDetectionAndLowVCC();
 void alarm();
+void playDoubleClick();
 void readTempAndManageHistory();
 void resetHistory();
 void initPeriodicSleepWithWatchdog(uint8_t tSleepMode, uint8_t aWatchdogPrescaler);
@@ -202,10 +203,12 @@ void setup() {
     readADCChannelWithReferenceOversample(ADC_TEMPERATURE_CHANNEL_MUX, INTERNAL1V1, 0);
 
     /*
-     * Signal power on with o tone. This is done only after power on but NOT after reset.
+     * Signal power on with a single tone and reset with a double click.
      */
     if (sMCUSRStored & (1 << PORF)) {
         PWMtone(TONE_PIN, 2200, 100);
+    } else {
+        playDoubleClick();
     }
 
     /*
@@ -273,15 +276,14 @@ void loop() {
     digitalWrite(LED_PIN, 1);
 
     /*
-     * Check if reason for reset was "power on" (in contrast to "reset pin") and temperature is decreasing
+     * Check if we are just after boot and temperature is decreasing
      */
-    if ((sMCUSRStored & (1 << PORF))
-    /* we are a a power on boot */
-    && (sTemperatureArray[(sizeof(sTemperatureArray) / sizeof(uint16_t)) - 1] == 0)
+    if ((sTemperatureArray[(sizeof(sTemperatureArray) / sizeof(uint16_t)) - 1] == 0)
             && (sTemperatureArray[(sizeof(sTemperatureArray) / sizeof(uint16_t)) - 2] > 0)
             /*
-             * array is almost full, so check if temperature is lower than at power on time which means,
-             * we ported the sensor from a warm place to its final one.
+             * array is almost full, so check if temperature is lower than at boot time which means,
+             * we ported the sensor from a warm place to its final one
+             * or the window is still open and the user has pushed the reset button to avoid an alarm.
              */
             && (sTemperatureArray[0] < sTemperatureArray[(sizeof(sTemperatureArray) / sizeof(uint16_t)) - 2])) {
         // Start from beginning, clear temperature array
@@ -357,11 +359,7 @@ void loop() {
     /*
      * VCC check every hour
      */
-    sVCCMonitoringDelayCounter--;
-    if (sVCCMonitoringDelayCounter == 0) {
-        sVCCMonitoringDelayCounter = (VCC_MONITORING_DELAY_MIN * 60) / TEMPERATURE_SAMPLE_SECONDS;
-        checkVCCPeriodically(); // needs 4.5 ms
-    }
+    checkVCCPeriodically(); // needs 4.5 ms
 
     delayAndSignalOpenWindowDetectionAndLowVCC();
     // deactivate LED before sleeping
@@ -553,6 +551,18 @@ void alarm() {
     }
 }
 
+void playDoubleClick() {
+    PWMtone(TONE_PIN, 2200);
+    delayMicroseconds(2000);
+    noTone(TONE_PIN);
+
+    delayMilliseconds(100); // delay between clicks
+
+    PWMtone(TONE_PIN, 2200);
+    delayMicroseconds(2000);
+    noTone(TONE_PIN);
+}
+
 /*
  * Flash LED only for a short period to save power.
  * If open window detected, increase pulse length to give a visual feedback
@@ -568,15 +578,7 @@ void delayAndSignalOpenWindowDetectionAndLowVCC() {
     } else if (sOpenWindowDetectedOld) {
 // closing window just detected -> signal it with 2 clicks
         sOpenWindowDetectedOld = false; // do it once
-        PWMtone(TONE_PIN, 2200);
-        delayMicroseconds(2000);
-        noTone(TONE_PIN);
-
-        delayMilliseconds(100); // delay between clocks
-
-        PWMtone(TONE_PIN, 2200);
-        delayMicroseconds(2000);
-        noTone(TONE_PIN);
+        playDoubleClick();
 
     } else if (sVCCVoltageTooLow) {
         PWMtone(TONE_PIN, 1600);
