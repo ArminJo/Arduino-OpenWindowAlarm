@@ -60,7 +60,7 @@
 #include <avr/sleep.h> // needed for sleep_enable()
 #include <avr/wdt.h>   // needed for WDTO_8S
 
-#define VERSION "1.1"
+#define VERSION "1.2"
 
 #ifdef ALARM_TEST
 #define ALARM_TEST_PIN PB0
