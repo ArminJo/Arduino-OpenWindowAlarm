@@ -37,7 +37,7 @@
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
-
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/gpl.html>.
  *
@@ -61,6 +61,12 @@
 #include <avr/wdt.h>   // needed for WDTO_8S
 
 #define VERSION "1.2"
+/*
+ * Version 1.2
+ * - Improved sleep, detecting closed window also after start of alarm, reset behavior.
+ * - Changed LIPO detection threshold.
+ * - Fixed analog reference bug.
+ */
 
 #ifdef ALARM_TEST
 #define ALARM_TEST_PIN PB0
@@ -89,7 +95,7 @@ uint8_t sOpenWindowSampleDelayCounter;
  * VCC monitoring
  */
 const uint16_t VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT_LIPO = 3550; // 3.7 Volt is normal operating voltage if powered by a LiPo battery
-const uint16_t VCC_VOLTAGE_LIPO_DETECTION = 3400; // Above 3.4 Volt we assume that a LIPO battery is attached, below we assume a CR2032 or two AA or AAA batteries attached.
+const uint16_t VCC_VOLTAGE_LIPO_DETECTION = 3600; // Above 3.4 Volt we assume that a LIPO battery is attached, below we assume a CR2032 or two AA or AAA batteries attached.
 const uint16_t VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT_STANDARD = 2350; // 3.0 Volt is normal operating voltage if powered by a CR2032 or two AA or AAA batteries.
 
 uint16_t sVCCVoltageMillivolt;
@@ -114,7 +120,10 @@ uint16_t sVCCMonitoringDelayCounter; // counter to enable different periods of V
 
 #define ADC_TEMPERATURE_CHANNEL_MUX 15
 #define ADC_1_1_VOLT_CHANNEL_MUX 12
-#define SHIFT_VALUE_FOR_REFERENCE REFS2
+// 0 1 0 Internal 1.1V Voltage Reference.
+#define INTERNAL (2)
+#define INTERNAL1V1 INTERNAL
+#define SHIFT_VALUE_FOR_REFERENCE REFS0
 
 #if (LED_PIN == TX_PIN)
 #error "LED pin must not be equal TX pin."
@@ -205,10 +214,19 @@ void setup() {
     /*
      * Signal power on with a single tone and reset with a double click.
      */
+#ifdef DEBUG
+    writeString(F("Booting from "));
+#endif
     if (sMCUSRStored & (1 << PORF)) {
         PWMtone(TONE_PIN, 2200, 100);
+#ifdef DEBUG
+        writeString(F("power up \n"));
+#endif
     } else {
         playDoubleClick();
+#ifdef DEBUG
+        writeString(F("reset \n"));
+#endif
     }
 
     /*
@@ -226,8 +244,7 @@ void setup() {
 #ifdef ALARM_TEST
     if (!digitalRead(ALARM_TEST_PIN)) {
 #ifdef DEBUG
-        writeString(F("Test signal out"));
-        write1Start8Data1StopNoParity('\n');
+        writeString(F("Test signal out\n"));
 #endif
         alarm();
     }
@@ -612,7 +629,7 @@ uint16_t readADCChannelWithReferenceOversample(uint8_t aChannelNumber, uint8_t a
 // ADSC-StartConversion ADATE-AutoTriggerEnable ADIF-Reset Interrupt Flag
     ADCSRA = (_BV(ADEN) | _BV(ADSC) | _BV(ADATE) | _BV(ADIF) | ADC_PRESCALE8);
 
-    for (uint8_t i = 0; i < (1 << aOversampleExponent); i++) {
+    for (uint8_t i = 0; i < _BV(aOversampleExponent); i++) {
         /*
          * wait for free running conversion to finish.
          * Do not wait for ADSC here, since ADSC is only low for 1 ADC Clock cycle on free running conversion.
@@ -660,9 +677,13 @@ void checkVCCPeriodically() {
 #ifdef DEBUG
         writeString(F("VCC="));
         writeUnsignedInt(sVCCVoltageMillivolt);
-        writeString(F("mV LIPO="));
-        writeByte(sLIPOSupplyDetected);
-        writeChar('\n');
+        writeString(F("mV - "));
+        if (sLIPOSupplyDetected) {
+            writeString(F("LIPO"));
+        } else {
+            writeString(F("standard or button cell"));
+        }
+        writeString(" detected\n");
 #endif
         if ((sLIPOSupplyDetected && sVCCVoltageMillivolt < VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT_LIPO)
                 || (!sLIPOSupplyDetected && sVCCVoltageMillivolt < VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT_STANDARD)) {

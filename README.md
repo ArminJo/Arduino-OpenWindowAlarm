@@ -96,3 +96,10 @@ If the temperature on the sill is lower than the temperature where the board was
 The FrequencyDetector library examples are built on Travis CI for the following boards:
 
 - Digispark ATTiny85
+
+# Revision History
+### Version 1.2
+- Improved sleep, detecting closed window also after start of alarm, reset behavior.
+- Changed LIPO detection threshold.
+- Fixed analog reference bug.
+
