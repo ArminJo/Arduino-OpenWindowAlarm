@@ -32,7 +32,7 @@
  *
  */
 
-#if defined(__AVR_ATtiny25__) || defined(__AVR_ATtiny45__) || defined(__AVR_ATtiny85__)
+#if defined(__AVR_ATtiny25__) || defined(__AVR_ATtiny45__) || defined(__AVR_ATtiny85__) || defined(__AVR_ATtiny87__) || defined(__AVR_ATtiny167__)
 
 #include "TinySerialOut.h"
 
@@ -268,10 +268,11 @@ void writeFloat(double aFloat, uint8_t aDigits) {
  */
 
 // #if ... to be compatible with ATTinyCores and AttinyDigisparkCores
-#if (defined(USE_SOFTWARE_SERIAL) && (USE_SOFTWARE_SERIAL != 0)) || defined(TINY_DEBUG_SERIAL_SUPPORTED)
+#if ((!defined(UBRRH) && !defined(UBRR0H)) || (defined(USE_SOFTWARE_SERIAL) && (USE_SOFTWARE_SERIAL != 0))) || defined(TINY_DEBUG_SERIAL_SUPPORTED) || ((defined(UBRRH) || defined(UBRR0H) || defined(LINBRRH)) && (defined(USE_SOFTWARE_SERIAL) && (USE_SOFTWARE_SERIAL == 0)))
 // Switch to SerialOut since Serial is already defined or comment out
-// the line 228 //#include "TinySoftwareSerial.h" in in ATTinyCores/src/tiny/Arduino.h for ATTinyCores
-// or line 18  //#include "TinyDebugSerial.h" in AttinyDigisparkCores/src/tiny/WProgram.h for AttinyDigisparkCores
+// at line 54 in TinySoftwareSerial.h included in in ATTinyCores/src/tiny/Arduino.h at line 228  for ATTinyCores
+// or line 71 in HardwareSerial.h included in ATTinyCores/src/tiny/Arduino.h at line 227 for ATTinyCores
+// or line 627ff TinyDebugSerial.h included in AttinyDigisparkCores/src/tiny/WProgram.h at line 18 for AttinyDigisparkCores
 TinySerialOut SerialOut;
 #else
 TinySerialOut Serial;
@@ -464,7 +465,7 @@ inline void delay4CyclesInlineExact(uint16_t a4Microseconds) {
 void write1Start8Data1StopNoParity(uint8_t aValue) {
     asm volatile
     (
-            "cbi   %[serreg], %[serbit]" "\n\t" /* 2  <--- 0 */
+            "cbi   %[txport], %[txpin]" "\n\t" /* 2  <--- 0 */
             "ror   %[value]" "\n\t" /* 1 */
             "nop" "\n\t" /* 1 */
             "nop" "\n\t" /* 1 */
@@ -473,10 +474,10 @@ void write1Start8Data1StopNoParity(uint8_t aValue) {
 
             "brcs  L%=b0h" "\n\t" /* 1  (not taken) */
             "nop" "\n\t" /* 1 */
-            "cbi   %[serreg], %[serbit]" "\n\t" /* 2  <--- st is 9 cycles */
+            "cbi   %[txport], %[txpin]" "\n\t" /* 2  <--- st is 9 cycles */
             "rjmp  L%=b0z" "\n\t" /* 2 */
             "L%=b0h: " /* 2  (taken) */
-            "sbi   %[serreg], %[serbit]" "\n\t" /* 2  <--- st is 9 cycles */
+            "sbi   %[txport], %[txpin]" "\n\t" /* 2  <--- st is 9 cycles */
             "nop" "\n\t" /* 1 */
             "nop" "\n\t" /* 1 */
             "L%=b0z: "
@@ -486,10 +487,10 @@ void write1Start8Data1StopNoParity(uint8_t aValue) {
 
             "brcs  L%=b1h" "\n\t" /* 1  (not taken) */
             "nop" "\n\t" /* 1 */
-            "cbi   %[serreg], %[serbit]" "\n\t" /* 2  <--- b0 is 8 cycles */
+            "cbi   %[txport], %[txpin]" "\n\t" /* 2  <--- b0 is 8 cycles */
             "rjmp  L%=b1z" "\n\t" /* 2 */
             "L%=b1h: " /* 2  (taken) */
-            "sbi   %[serreg], %[serbit]" "\n\t" /* 2  <--- b0 is 8 cycles */
+            "sbi   %[txport], %[txpin]" "\n\t" /* 2  <--- b0 is 8 cycles */
             "nop" "\n\t" /* 1 */
             "nop" "\n\t" /* 1 */
             "L%=b1z: "
@@ -500,10 +501,10 @@ void write1Start8Data1StopNoParity(uint8_t aValue) {
 
             "brcs  L%=b2h" "\n\t" /* 1  (not taken) */
             "nop" "\n\t" /* 1 */
-            "cbi   %[serreg], %[serbit]" "\n\t" /* 2  <--- b1 is 9 cycles */
+            "cbi   %[txport], %[txpin]" "\n\t" /* 2  <--- b1 is 9 cycles */
             "rjmp  L%=b2z" "\n\t" /* 2 */
             "L%=b2h: " /* 2  (taken) */
-            "sbi   %[serreg], %[serbit]" "\n\t" /* 2  <--- b1 is 9 cycles */
+            "sbi   %[txport], %[txpin]" "\n\t" /* 2  <--- b1 is 9 cycles */
             "nop" "\n\t" /* 1 */
             "nop" "\n\t" /* 1 */
             "L%=b2z: "
@@ -514,10 +515,10 @@ void write1Start8Data1StopNoParity(uint8_t aValue) {
 
             "brcs  L%=b3h" "\n\t" /* 1  (not taken) */
             "nop" "\n\t" /* 1 */
-            "cbi   %[serreg], %[serbit]" "\n\t" /* 2  <--- b2 is 9 cycles */
+            "cbi   %[txport], %[txpin]" "\n\t" /* 2  <--- b2 is 9 cycles */
             "rjmp  L%=b3z" "\n\t" /* 2 */
             "L%=b3h: " /* 2  (taken) */
-            "sbi   %[serreg], %[serbit]" "\n\t" /* 2  <--- b2 is 9 cycles */
+            "sbi   %[txport], %[txpin]" "\n\t" /* 2  <--- b2 is 9 cycles */
             "nop" "\n\t" /* 1 */
             "nop" "\n\t" /* 1 */
             "L%=b3z: "
@@ -527,10 +528,10 @@ void write1Start8Data1StopNoParity(uint8_t aValue) {
 
             "brcs  L%=b4h" "\n\t" /* 1  (not taken) */
             "nop" "\n\t" /* 1 */
-            "cbi   %[serreg], %[serbit]" "\n\t" /* 2  <--- b3 is 8 cycles */
+            "cbi   %[txport], %[txpin]" "\n\t" /* 2  <--- b3 is 8 cycles */
             "rjmp  L%=b4z" "\n\t" /* 2 */
             "L%=b4h: " /* 2  (taken) */
-            "sbi   %[serreg], %[serbit]" "\n\t" /* 2  <--- b3 is 8 cycles */
+            "sbi   %[txport], %[txpin]" "\n\t" /* 2  <--- b3 is 8 cycles */
             "nop" "\n\t" /* 1 */
             "nop" "\n\t" /* 1 */
             "L%=b4z: "
@@ -541,10 +542,10 @@ void write1Start8Data1StopNoParity(uint8_t aValue) {
 
             "brcs  L%=b5h" "\n\t" /* 1  (not taken) */
             "nop" "\n\t" /* 1 */
-            "cbi   %[serreg], %[serbit]" "\n\t" /* 2  <--- b4 is 9 cycles */
+            "cbi   %[txport], %[txpin]" "\n\t" /* 2  <--- b4 is 9 cycles */
             "rjmp  L%=b5z" "\n\t" /* 2 */
             "L%=b5h: " /* 2  (taken) */
-            "sbi   %[serreg], %[serbit]" "\n\t" /* 2  <--- b4 is 9 cycles */
+            "sbi   %[txport], %[txpin]" "\n\t" /* 2  <--- b4 is 9 cycles */
             "nop" "\n\t" /* 1 */
             "nop" "\n\t" /* 1 */
             "L%=b5z: "
@@ -555,10 +556,10 @@ void write1Start8Data1StopNoParity(uint8_t aValue) {
 
             "brcs  L%=b6h" "\n\t" /* 1  (not taken) */
             "nop" "\n\t" /* 1 */
-            "cbi   %[serreg], %[serbit]" "\n\t" /* 2  <--- b5 is 9 cycles */
+            "cbi   %[txport], %[txpin]" "\n\t" /* 2  <--- b5 is 9 cycles */
             "rjmp  L%=b6z" "\n\t" /* 2 */
             "L%=b6h: " /* 2  (taken) */
-            "sbi   %[serreg], %[serbit]" "\n\t" /* 2  <--- b5 is 9 cycles */
+            "sbi   %[txport], %[txpin]" "\n\t" /* 2  <--- b5 is 9 cycles */
             "nop" "\n\t" /* 1 */
             "nop" "\n\t" /* 1 */
             "L%=b6z: "
@@ -568,10 +569,10 @@ void write1Start8Data1StopNoParity(uint8_t aValue) {
 
             "brcs  L%=b7h" "\n\t" /* 1  (not taken) */
             "nop" "\n\t" /* 1 */
-            "cbi   %[serreg], %[serbit]" "\n\t" /* 2  <--- b6 is 8 cycles */
+            "cbi   %[txport], %[txpin]" "\n\t" /* 2  <--- b6 is 8 cycles */
             "rjmp  L%=b7z" "\n\t" /* 2 */
             "L%=b7h: " /* 2  (taken) */
-            "sbi   %[serreg], %[serbit]" "\n\t" /* 2  <--- b6 is 8 cycles */
+            "sbi   %[txport], %[txpin]" "\n\t" /* 2  <--- b6 is 8 cycles */
             "nop" "\n\t" /* 1 */
             "nop" "\n\t" /* 1 */
             "L%=b7z: "
@@ -582,7 +583,7 @@ void write1Start8Data1StopNoParity(uint8_t aValue) {
 
             "nop" "\n\t" /* 1 */
             "nop" "\n\t" /* 1 */
-            "sbi   %[serreg], %[serbit]" "\n\t" /* 2  <--- b7 is 9 cycles */
+            "sbi   %[txport], %[txpin]" "\n\t" /* 2  <--- b7 is 9 cycles */
             "nop" "\n\t" /* 1 */
             "nop" "\n\t" /* 1 */
             "nop" "\n\t" /* 1 */
@@ -595,8 +596,8 @@ void write1Start8Data1StopNoParity(uint8_t aValue) {
             :
             :
             [value] "r" ( aValue ),
-            [serreg] "I" ( 0x18 ), /* 0x18 is PORTB on Attiny 85 */
-            [serbit] "I" ( TX_PIN )
+            [txport] "I" ( TX_PORT_ADDR ),
+            [txpin] "I" ( TX_PIN )
     );
 }
 #else
@@ -728,7 +729,7 @@ void write1Start8Data1StopNoParity(uint8_t aValue) {
             :
             :
             [value] "r" ( aValue ),
-            [txport] "I" ( 0x18 ) , /* 0x18 is PORTB on Attiny 85 */
+            [txport] "I" ( TX_PORT_ADDR ) , /* 0x18 is PORTB on Attiny 85 */
             [txpin] "I" ( TX_PIN )
             :
             "r25",
@@ -751,7 +752,7 @@ void write1Start8Data1StopNoParity_C_Version(uint8_t aValue) {
      * C Version here for 38400 baud at 1MHz Clock. You see, it is simple :-)
      */
     // start bit
-    PORTB &= ~(1 << TX_PIN);
+    TX_PORT &= ~(1 << TX_PIN);
     _NOP();
     delay4CyclesInlineExact(4);
 
@@ -762,10 +763,10 @@ void write1Start8Data1StopNoParity_C_Version(uint8_t aValue) {
             // bit=1
             // to compensate for jump at data=0
             _NOP();
-            PORTB |= 1 << TX_PIN;
+            TX_PORT |= 1 << TX_PIN;
         } else {
             // bit=0
-            PORTB &= ~(1 << TX_PIN);
+            TX_PORT &= ~(1 << TX_PIN);
             // compensate for different cycles of sbrs
             _NOP();
             _NOP();
@@ -786,9 +787,9 @@ void write1Start8Data1StopNoParity_C_Version(uint8_t aValue) {
     _NOP();
 
     // Stop bit
-    PORTB |= 1 << TX_PIN;
+    TX_PORT |= 1 << TX_PIN;
     // -8 cycles to compensate for fastest repeated call (1 ret + 1 load + 1 call)
     delay4CyclesInlineExact(4); // gives minimum 25 cycles for stop bit :-)
 }
-#endif // defined(__AVR_ATtiny25__) || defined(__AVR_ATtiny45__) || defined(__AVR_ATtiny85__)
+#endif // defined(__AVR_ATtiny25__) || defined(__AVR_ATtiny45__) || defined(__AVR_ATtiny85__) || defined(__AVR_ATtiny87__) || defined(__AVR_ATtiny167__)
 

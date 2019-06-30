@@ -21,7 +21,8 @@
  * Every `VCC_MONITORING_DELAY_MIN` (60) minutes the battery voltage is measured. A battery voltage below `VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT_LIPO` (3550) Millivolt
  * or below `VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT_STANDARD` (2350) mV is indicated by beeping and flashing LED every 24 seconds. Only the beep (not the flash) is significantly longer than at open window detection.
  *
- * The initial alarm lasts for 10 minutes. After this it is activated for a period 10 seconds with a increasing break from 24 seconds up to 5 minutes.
+ * The initial alarm lasts for 10 minutes. After this it is activated for a period of 10 seconds with a increasing break from 24 seconds up to 5 minutes.
+ * Check temperature at each end of break interval to discover closed window, if window was closed during the silent break, but device was not reset.
  *
  * After power up or reset, the inactive settling time is 5 minutes or additionally 4:15 (or 8:30) minutes if the board is getting colder during the settling time, to avoid false alarms after boot.
  *
@@ -60,8 +61,10 @@
 #include <avr/sleep.h> // needed for sleep_enable()
 #include <avr/wdt.h>   // needed for WDTO_8S
 
-#define VERSION "1.2"
+#define VERSION "1.2.1"
 /*
+ * Version 1.2.1
+ * - Check for temperature rising after each alarm break.
  * Version 1.2
  * - Improved sleep, detecting closed window also after start of alarm, reset behavior.
  * - Changed LIPO detection threshold.
@@ -295,14 +298,14 @@ void loop() {
     /*
      * Check if we are just after boot and temperature is decreasing
      */
-    if ((sTemperatureArray[(sizeof(sTemperatureArray) / sizeof(uint16_t)) - 1] == 0)
-            && (sTemperatureArray[(sizeof(sTemperatureArray) / sizeof(uint16_t)) - 2] > 0)
+    if ((sTemperatureArray[(sizeof(sTemperatureArray) / sizeof(sTemperatureArray[0])) - 1] == 0)
+            && (sTemperatureArray[(sizeof(sTemperatureArray) / sizeof(sTemperatureArray[0])) - 2] > 0)
             /*
              * array is almost full, so check if temperature is lower than at boot time which means,
              * we ported the sensor from a warm place to its final one
              * or the window is still open and the user has pushed the reset button to avoid an alarm.
              */
-            && (sTemperatureArray[0] < sTemperatureArray[(sizeof(sTemperatureArray) / sizeof(uint16_t)) - 2])) {
+            && (sTemperatureArray[0] < sTemperatureArray[(sizeof(sTemperatureArray) / sizeof(sTemperatureArray[0])) - 2])) {
         // Start from beginning, clear temperature array
 #ifdef DEBUG
         writeString(F("Detected porting to a colder place -> reset\n"));
@@ -468,14 +471,15 @@ void playAlarmSignalSeconds(uint16_t aSecondsToPlay) {
 }
 
 void resetHistory() {
-    for (uint8_t i = 0; i < (sizeof(sTemperatureArray) / sizeof(uint16_t)) - 1; ++i) {
+    for (uint8_t i = 0; i < (sizeof(sTemperatureArray) / sizeof(sTemperatureArray[0])) - 1; ++i) {
         sTemperatureArray[i] = 0;
     }
 }
+
 void readTempAndManageHistory() {
     sTemperatureNewSum = 0;
     sTemperatureOldSum = 0;
-    uint8_t tIndex = (sizeof(sTemperatureArray) / sizeof(uint16_t)) - 1;
+    uint8_t tIndex = (sizeof(sTemperatureArray) / sizeof(sTemperatureArray[0])) - 1;
     /*
      * shift values in temperature history array and insert new one at [0]
      */
@@ -516,33 +520,42 @@ void readTempAndManageHistory() {
 }
 
 /*
+ * Check if history is completely filled and if temperature is rising
+ */
+bool checkForTemperatureRising() {
+    if (sTemperatureArray[(sizeof(sTemperatureArray) / sizeof(sTemperatureArray[0])) - 1] != 0
+            && sTemperatureNewSum > sTemperatureOldSum + (TEMPERATURE_DELTA_THRESHOLD_DEGREE * TEMPERATURE_COMPARE_AMOUNT)) {
+#ifdef DEBUG
+        writeString(F("Alarm - detected window already closed -> start again\n"));
+#endif
+        sOpenWindowDetected = false;
+        resetHistory();
+        return true;
+    }
+    return false;
+}
+
+/*
  * Generates a 2200 | 1100 Hertz tone signal for 600 seconds / 10 minutes and then play it 10 seconds with intervals starting from 24 seconds up to 5 minutes.
  * After 2 minutes the temperature is checked for the remaining 8 minutes if temperature is increasing in order to detect a closed window.
+ * Check temperature at each end of break interval to discover closed window, if window was closed during the silent break, but device was not reset.
  */
 void alarm() {
 
-    // First 120 seconds
+    // First 120 seconds - just generate alarm tone
     playAlarmSignalSeconds(120);
-    // after 80 seconds the new temperature is stable
+    // after 80 seconds the new (increased) temperature is stable
 
-    // reset history
-    for (uint8_t j = 0; j < (sizeof(sTemperatureArray) / sizeof(uint16_t)) - 1; ++j) {
-        sTemperatureArray[j] = 0;
-    }
+    // prepare for new temperature check - reset history
+    resetHistory();
 
-    // 480 seconds
+    // remaining 480 seconds - check temperature while generating alarm tone
     for (uint8_t i = 0; i < 16; ++i) {
         readTempAndManageHistory();
         /*
          * Check if history is completely filled and if temperature is rising
          */
-        if (sTemperatureArray[(sizeof(sTemperatureArray) / sizeof(uint16_t)) - 1] != 0
-                && sTemperatureNewSum > sTemperatureOldSum + (TEMPERATURE_DELTA_THRESHOLD_DEGREE * TEMPERATURE_COMPARE_AMOUNT)) {
-#ifdef DEBUG
-            writeString(F("Alarm - detected window already closed -> start again\n"));
-#endif
-            sOpenWindowDetected = false;
-            resetHistory();
+        if (checkForTemperatureRising()) {
             return;
         }
         playAlarmSignalSeconds(30);
@@ -553,6 +566,13 @@ void alarm() {
 #endif
 
     uint16_t tDelay = 24;
+    /*
+     * initialize history with current temperature to detect increasing values
+     */
+    resetHistory();
+    for (uint8_t i = 0; i < TEMPERATURE_COMPARE_DISTANCE; ++i) {
+        readTempAndManageHistory();
+    }
     while (true) {
 #ifdef DEBUG
         writeString(F("Alarm pause for "));
@@ -560,11 +580,20 @@ void alarm() {
         writeString(F(" seconds\n"));
 #endif
         sleepDelay(tDelay); // Start with 24 seconds
+        /*
+         * check if temperature is rising at end of break interval
+         */
+        readTempAndManageHistory();
+        if (sTemperatureNewSum >= sTemperatureAtWindowOpen + TEMPERATURE_COMPARE_AMOUNT) {
+            return;
+        }
+
         playAlarmSignalSeconds(10);
         noTone(TONE_PIN);
         if (tDelay < 600) { // up to 5 minutes
-            tDelay++;
+            tDelay += tDelay / 16;
         }
+
     }
 }
 
