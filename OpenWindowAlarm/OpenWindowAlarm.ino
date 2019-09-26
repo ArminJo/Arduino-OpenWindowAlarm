@@ -4,14 +4,14 @@
  * Overview:
  * Every 24 seconds a sample is taken of the ATtiny internal temperature sensor which has a resolution of 1 degree.
  * If temperature is lower than "old" temperature value, then an alarm is issued 5 minutes later, if "the condition still holds".
- * Detection of an open window is indicated by a longer 20ms blink and a short click every 24 seconds.
- * A low battery (below 3.55 Volt for LiPo) is indicated by beeping and flashing LED every 24 seconds. Only the beep (not the flash) is significantly longer than at open window detection.
+ * Detection of an open window is indicated by a longer 20 ms blink and a short click every 24 seconds.
+ * A low battery (below 3.55 volt for LiPo) is indicated by beeping and flashing LED every 24 seconds. Only the beep (not the flash) is significantly longer than at open window detection.
  *
  * Detailed description:
  * Open window is detected after `TEMPERATURE_COMPARE_AMOUNT * TEMPERATURE_SAMPLE_SECONDS` (48) seconds of reading a temperature
  * which value is `TEMPERATURE_DELTA_THRESHOLD_DEGREE` (2) lower than the temperature `TEMPERATURE_COMPARE_DISTANCE * TEMPERATURE_SAMPLE_SECONDS` (192 -> 3 minutes and 12 seconds) seconds before.
  * The delay is implemented by 3 times sleeping at `SLEEP_MODE_PWR_DOWN` for a period of 8 seconds to reduce power consumption.
- * Detection of an open window is indicated by a longer 20ms blink and a short click every 24 seconds.
+ * Detection of an open window is indicated by a longer 20 ms blink and a short click every 24 seconds.
  * Therefore, the internal sensor has 3 minutes time to adjust to the outer temperature, to get even small changes in temperature.
  * The greater the temperature change the earlier the sensor value will change and detect an open window.
  * After open window detection Alarm is activated after `OPEN_WINDOW_ALARM_DELAY_MINUTES` (5).
@@ -27,7 +27,7 @@
  * After power up or reset, the inactive settling time is 5 minutes or additionally 4:15 (or 8:30) minutes if the board is getting colder during the settling time, to avoid false alarms after boot.
  *
  * Power consumption:
- * Power consumption is 6uA at sleep and 2.8 mA at at 1MHz active.
+ * Power consumption is 6uA at sleep and 2.8 mA at at 1 MHz active.
  * Loop needs 2.1 ms and with DEBUG 6.5 ms => active time is ca. 1/10k or 1/4k of total time and power consumption is 500 times more than sleep.
  *   => Loop adds 5% to 12% to total power consumption.
  *
@@ -48,7 +48,7 @@
 
 //#define DEBUG // To see serial output with 115200 baud at P2
 //#define TRACE // To see more serial output at startup with 115200 baud at P2
-//#define ALARM_TEST // start alarm immediately if PB0 / P0 is connected to ground - incompatible with Pullup at 0 bootloader for power bank
+//#define ALARM_TEST // start alarm immediately if PB0 / P0 is connected to ground - incompatible with pullup at 0 bootloader for power bank
 #ifdef TRACE
 #define DEBUG
 #endif
@@ -64,7 +64,7 @@
 #define VERSION "1.2.1"
 /*
  * Version 1.2.1
- * - Check for temperature rising after each alarm break.
+ * - Fixed bug in check for temperature rising after each alarm.
  * Version 1.2
  * - Improved sleep, detecting closed window also after start of alarm, reset behavior.
  * - Changed LIPO detection threshold.
@@ -77,7 +77,7 @@
 
 const uint8_t OPEN_WINDOW_ALARM_DELAY_MINUTES = 5;
 
-const uint16_t TEMPERATURE_SAMPLE_SECONDS = 24;  // use multiple of 8
+const uint16_t TEMPERATURE_SAMPLE_SECONDS = 24;  // Use multiple of 8
 const uint8_t OPEN_WINDOW_SAMPLES = (OPEN_WINDOW_ALARM_DELAY_MINUTES * 60) / TEMPERATURE_SAMPLE_SECONDS;
 const uint8_t TEMPERATURE_COMPARE_AMOUNT = 2;
 const uint8_t TEMPERATURE_COMPARE_DISTANCE = 8; // 3 minutes and 12 seconds
@@ -97,15 +97,15 @@ uint8_t sOpenWindowSampleDelayCounter;
 /*
  * VCC monitoring
  */
-const uint16_t VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT_LIPO = 3550; // 3.7 Volt is normal operating voltage if powered by a LiPo battery
-const uint16_t VCC_VOLTAGE_LIPO_DETECTION = 3600; // Above 3.4 Volt we assume that a LIPO battery is attached, below we assume a CR2032 or two AA or AAA batteries attached.
-const uint16_t VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT_STANDARD = 2350; // 3.0 Volt is normal operating voltage if powered by a CR2032 or two AA or AAA batteries.
+const uint16_t VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT_LIPO = 3550; // 3.7 volt is the normal operating voltage if powered by a LiPo battery
+const uint16_t VCC_VOLTAGE_LIPO_DETECTION = 3600; // Above 3.6 volt we assume that a LIPO battery is attached, below we assume a CR2032 or two AA or AAA batteries are attached.
+const uint16_t VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT_STANDARD = 2350; // 3.0 volt is normal operating voltage if powered by a CR2032 or two AA or AAA batteries.
 
 uint16_t sVCCVoltageMillivolt;
 bool sVCCVoltageTooLow;
 bool sLIPOSupplyDetected;
 const uint8_t VCC_MONITORING_DELAY_MIN = 60; // Check VCC every hour
-uint16_t sVCCMonitoringDelayCounter; // counter to enable different periods of VCC monitoring, because this costs extra power.
+uint16_t sVCCMonitoringDelayCounter; // Separate counter for VCC monitoring, because this costs extra power.
 
 //
 // ATMEL ATTINY85
@@ -123,7 +123,7 @@ uint16_t sVCCMonitoringDelayCounter; // counter to enable different periods of V
 
 #define ADC_TEMPERATURE_CHANNEL_MUX 15
 #define ADC_1_1_VOLT_CHANNEL_MUX 12
-// 0 1 0 Internal 1.1V Voltage Reference.
+// 0 1 0 Internal 1.1 volt voltage Reference.
 #define INTERNAL (2)
 #define INTERNAL1V1 INTERNAL
 #define SHIFT_VALUE_FOR_REFERENCE REFS0
@@ -215,7 +215,7 @@ void setup() {
     readADCChannelWithReferenceOversample(ADC_TEMPERATURE_CHANNEL_MUX, INTERNAL1V1, 0);
 
     /*
-     * Signal power on with a single tone and reset with a double click.
+     * Signal power on with a single tone or signal reset with a double click.
      */
 #ifdef DEBUG
     writeString(F("Booting from "));
@@ -391,7 +391,7 @@ void loop() {
 /*
  * Code to change Digispark Bootloader clock settings to get the right CPU frequency
  * and to reset Digispark OCCAL tweak.
- * Call it if you want to use the standard ATtiny85 library, BUT do not call it, if you need Digispark USB functions available for 16MHz.
+ * Call it if you want to use the standard ATtiny85 library, BUT do not call it, if you need Digispark USB functions available for 16 MHz.
  */
 void changeDigisparkClock() {
     uint8_t tLowFuse = boot_lock_fuse_bits_get(GET_LOW_FUSE_BITS);
@@ -451,7 +451,7 @@ void playAlarmSignalSeconds(uint16_t aSecondsToPlay) {
     writeUnsignedInt(aSecondsToPlay);
     writeString(F(" seconds\n"));
 #endif
-    uint16_t tCounter = (aSecondsToPlay * 10) / 13; // == ... * 1000 (ms per second) / (1300ms for a loop)
+    uint16_t tCounter = (aSecondsToPlay * 10) / 13; // == ... * 1000 (ms per second) / (1300 ms for a loop)
     if (tCounter == 0) {
         tCounter = 1;
     }
