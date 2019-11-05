@@ -62,7 +62,7 @@ Now the USB pullup resistor is only activated if the Digispark board is connecte
 **If you do not want to remove power to reset the alarm**, connect a reset button between PB5 and ground.
 I did this by connecting the unconnected VIN copper surface to PB5 and soldering the reset button directly to the VIN pin hole and the big ground surface of the removed VIN voltage regulator.<br/><br/>
 If you want to **get rid of the 5 seconds wait** for USB connection **after reset**, you can change the micronucleus kernel on the ATtiny85.
-Run the `Burn_upgrade_micronucleus-t85_pullup_at_0.cmd` script and then reload the OpenWindowAlarm application again with the Arduino IDE.
+Adapt and run the `Burn_upgrade_micronucleus-t85_no_pullup.cmd` script and then reload the OpenWindowAlarm application again with the Arduino IDE.
 
 ### After power reduction changes and reset button assembly
 | Both patches on front  | Reset connection on back |
@@ -102,11 +102,11 @@ If the temperature on the sill is lower than the temperature where the board was
 * `OPEN_WINDOW_ALARM_DELAY_MINUTES` (5) minutes after open window detection the alarm is activated.<br/>
     The alarm will not start or an activated alarm will stop if the current temperature is greater than the minimum measured temperature (+ 1) i.e. the window has been closed already.
     
-* The initial alarm lasts for 10 minutes. After this it is activated for a period of 10 seconds with a increasing break from 24 seconds up to 5 minutes.
+* The initial alarm lasts for 10 minutes. After this, it is activated for a period of 10 seconds with a increasing break from 24 seconds up to 5 minutes.
 
-* Every `VCC_MONITORING_DELAY_MIN` (60) minutes the battery voltage is measured. Depending on the detected battery type at power up (see `VCC_VOLTAGE_LIPO_DETECTION` (3.6 volt)), a battery voltage below `VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT_LIPO` (3550) or `VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT_STANDARD` Millivolt is indicated by beeping and flashing the LED every 24 seconds. Only the beep (not the flash) is significantly longer than the beep for an open window detection.
+* Every `VCC_MONITORING_DELAY_MIN` (60) minutes the battery voltage is measured. Depending on the detected battery type at power-on (see `VCC_VOLTAGE_LIPO_DETECTION` (3.6 volt)), a battery voltage below `VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT_LIPO` (3550) or `VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT_STANDARD` Millivolt is indicated by beeping and flashing the LED every 24 seconds. Only the beep (not the flash) is significantly longer than the beep for an open window detection.
 
-* After power up, the inactive settling time is 5 minutes. If the board is getting colder during the settling time, 4:15 (or 8:30) minutes are added to avoid false alarms after power up.
+* After power-on, the inactive settling time is 5 minutes. If the board is getting colder during the settling time, 4:15 (or 8:30) minutes are added to avoid false alarms after power-on.
 
 * If you enable DEBUG by commenting out line 49, you can monitor the serial output with 115200 baud at P2 to see what is happening.
 
@@ -117,4 +117,34 @@ If the temperature on the sill is lower than the temperature where the board was
 - Improved sleep, detecting closed window also after start of alarm, reset behavior.
 - Changed LIPO detection threshold.
 - Fixed analog reference bug.
+
+### Sample TRACE output after reset
+```
+Changed OSCCAL from 0x52 to 0x4e
+START ../src/OpenWindowAlarm.cpp
+Version 1.2.1 from Nov  5 2019
+Alarm delay = 5 minutes
+MCUSR=0x2 LFuse=0x225 WDTCR=0x0 OSCCAL=0x78
+Booting from reset 
+VCC=4022mV - LIPO detected
+Temp=300 Old=0 New=300
+Temp=298 Old=0 New=598
+Temp=298 Old=0 New=596
+Temp=297 Old=0 New=595
+Temp=296 Old=0 New=593
+Temp=296 Old=0 New=592
+Temp=296 Old=0 New=592
+Temp=296 Old=0 New=592
+Temp=296 Old=0 New=592
+Temp=296 Old=0 New=592
+Temp=296 Old=300 New=592
+Detected porting to a colder place -> reset
+Temp=296 Old=0 New=296
+Temp=296 Old=0 New=592
+...
+Temp=296 Old=0 New=592
+Temp=296 Old=296 New=592
+Temp=296 Old=592 New=592
+Temp=296 Old=592 New=592
+```
 

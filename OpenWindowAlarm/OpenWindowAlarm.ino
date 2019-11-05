@@ -21,7 +21,7 @@
  * Every `VCC_MONITORING_DELAY_MIN` (60) minutes the battery voltage is measured. A battery voltage below `VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT_LIPO` (3550) Millivolt
  * or below `VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT_STANDARD` (2350) mV is indicated by beeping and flashing LED every 24 seconds. Only the beep (not the flash) is significantly longer than at open window detection.
  *
- * The initial alarm lasts for 10 minutes. After this it is activated for a period of 10 seconds with a increasing break from 24 seconds up to 5 minutes.
+ * The initial alarm lasts for 10 minutes. After this, it is activated for a period of 10 seconds with a increasing break from 24 seconds up to 5 minutes.
  * Check temperature at each end of break interval to discover closed window, if window was closed during the silent break, but device was not reset.
  *
  * After power up or reset, the inactive settling time is 5 minutes or additionally 4:15 (or 8:30) minutes if the board is getting colder during the settling time, to avoid false alarms after boot.
@@ -31,8 +31,15 @@
  * Loop needs 2.1 ms and with DEBUG 6.5 ms => active time is ca. 1/10k or 1/4k of total time and power consumption is 500 times more than sleep.
  *   => Loop adds 5% to 12% to total power consumption.
  *
- *  Copyright (C) 2018  Armin Joachimsmeyer
+ *  Copyright (C) 2018-19  Armin Joachimsmeyer
  *  armin.joachimsmeyer@gmail.com
+ *
+ *  This file is part of Arduino-OpenWindowAlarm https://github.com/ArminJo/Arduino-OpenWindowAlarm.
+ *
+ *  Arduino-OpenWindowAlarm is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -46,9 +53,14 @@
 
 #include <Arduino.h>
 
-//#define DEBUG // To see serial output with 115200 baud at P2
+/*
+ * To see serial output, you must select "Digispark (1mhz – No USB)" as Board in the Arduino IDE!
+ * And you need TinySerialOut.h + TinySerialOut.cpp in your sketch folder.
+ */
+//#define DEBUG // To see serial output with 115200 baud at P2 -
 //#define TRACE // To see more serial output at startup with 115200 baud at P2
-//#define ALARM_TEST // start alarm immediately if PB0 / P0 is connected to ground - incompatible with pullup at 0 bootloader for power bank
+#define ALARM_TEST // start alarm immediately if PB0 / P0 is connected to ground
+
 #ifdef TRACE
 #define DEBUG
 #endif
@@ -75,21 +87,34 @@
 #define ALARM_TEST_PIN PB0
 #endif
 
-const uint8_t OPEN_WINDOW_ALARM_DELAY_MINUTES = 5;
+const uint8_t OPEN_WINDOW_ALARM_DELAY_MINUTES = 5; // Wait time between window open detection and activation of alarm
+const int OPEN_WINDOW_ALARM_FREQUENCY_HIGH = 2200; // Should be the resonance frequency of speaker/buzzer
+const int OPEN_WINDOW_ALARM_FREQUENCY_LOW = 1100;
+const int OPEN_WINDOW_ALARM_FREQUENCY_VCC_TOO_LOW = 1600; // Use a different frequency to distinguish the this alert from others
 
-const uint16_t TEMPERATURE_SAMPLE_SECONDS = 24;  // Use multiple of 8
+/*
+ * Temperature timing
+ */
+const uint16_t TEMPERATURE_SAMPLE_SECONDS = 24;  // Use multiple of 8 here
 const uint8_t OPEN_WINDOW_SAMPLES = (OPEN_WINDOW_ALARM_DELAY_MINUTES * 60) / TEMPERATURE_SAMPLE_SECONDS;
 const uint8_t TEMPERATURE_COMPARE_AMOUNT = 2;
 const uint8_t TEMPERATURE_COMPARE_DISTANCE = 8; // 3 minutes and 12 seconds
 // Array to hold enough values to compare TEMPERATURE_COMPARE_AMOUNT values with the same amount of values TEMPERATURE_COMPARE_DISTANCE positions before
 uint16_t sTemperatureArray[(TEMPERATURE_COMPARE_AMOUNT + TEMPERATURE_COMPARE_DISTANCE + TEMPERATURE_COMPARE_AMOUNT)];
-// 1 LSB  = 1 Degree Celsius
-const uint16_t TEMPERATURE_DELTA_THRESHOLD_DEGREE = 2;
+
+/*
+ * Temperature values
+ */
+const uint16_t TEMPERATURE_DELTA_THRESHOLD_DEGREE = 2; // 1 LSB  = 1 Degree Celsius
 uint16_t sTemperatureNewSum = 0;
 uint16_t sTemperatureOldSum = 0;
 
-uint16_t sTemperatureMinimumAfterWindowOpen;
+uint16_t sTemperatureMinimumAfterWindowOpen; // for window close detection
 uint16_t sTemperatureAtWindowOpen;
+
+/*
+ * Detection flags
+ */
 bool sOpenWindowDetected = false;
 bool sOpenWindowDetectedOld = false;
 uint8_t sOpenWindowSampleDelayCounter;
@@ -104,18 +129,18 @@ const uint16_t VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT_STANDARD = 2350; // 3.0 volt is
 uint16_t sVCCVoltageMillivolt;
 bool sVCCVoltageTooLow;
 bool sLIPOSupplyDetected;
-const uint8_t VCC_MONITORING_DELAY_MIN = 60; // Check VCC every hour
-uint16_t sVCCMonitoringDelayCounter; // Separate counter for VCC monitoring, because this costs extra power.
+const uint8_t VCC_MONITORING_DELAY_MIN = 60; // Check VCC every hour, because this costs extra power.
+uint16_t sVCCMonitoringDelayCounter; // Counter for VCC monitoring.
 
 //
 // ATMEL ATTINY85
 //
-//                                 +-\/-+
-//           RESET/ADC0 (D5) PB5  1|    |8  Vcc
-//   Tone - ADC3/PCINT3 (D3) PB3  2|    |7  PB2 (D2) INT0/ADC1 - TX Debug output
-//   Tone inv.   - ADC2 (D4) PB4  3|    |6  PB1 (D1) MISO/DO/AIN1/OC0B/OC1A/PCINT1 - (Digispark) LED
-//                           GND  4|    |5  PB0 (D0) OC0A/AIN0 - Alarm Test if connected to ground
-//                                 +----+
+//                                +-\/-+
+//          RESET/ADC0 (D5) PB5  1|    |8  Vcc
+// Tone      ADC3 USB+ (D3) PB3  2|    |7  PB2 (D2) INT0/ADC1 - TX Debug output
+// Tone inv. ADC2 USB- (D4) PB4  3|    |6  PB1 (D1) MISO/DO/AIN1/OC0B/OC1A/PCINT1 - (Digispark) LED
+//                          GND  4|    |5  PB0 (D0) OC0A/AIN0 - Alarm Test if connected to ground
+//                                +----+
 
 #define LED_PIN  PB1
 #define TONE_PIN PB4
@@ -139,7 +164,7 @@ uint16_t sVCCMonitoringDelayCounter; // Separate counter for VCC monitoring, bec
 
 uint8_t sMCUSRStored; // content of MCUSR register at startup
 
-void PWMtone(uint8_t aPin, unsigned int aFrequency, unsigned long aDurationMillis = 0);
+void PWMtone(unsigned int aFrequency, unsigned int aDurationMillis = 0);
 void delayAndSignalOpenWindowDetectionAndLowVCC();
 void alarm();
 void playDoubleClick();
@@ -185,21 +210,20 @@ void setup() {
     changeDigisparkClock();
 
 #ifdef DEBUG
-    writeString(F("START " __FILE__ "\nVersion " VERSION " from " __DATE__ "\nAlarm delay = "));
-    writeUnsignedByte(OPEN_WINDOW_ALARM_DELAY_MINUTES);
-    writeString(F(" minutes\n"));
+    Serial.print(F("START " __FILE__ "\nVersion " VERSION " from " __DATE__ "\nAlarm delay = "));
+    Serial.print(OPEN_WINDOW_ALARM_DELAY_MINUTES);
+    Serial.println(F(" minutes"));
 #endif
 
 #ifdef TRACE
-    writeString(F("MCUSR="));
-    writeUnsignedByteHexWithPrefix(sMCUSRStored);
-    writeString(F(" LFuse="));
-    writeUnsignedByteHexWithPrefix(boot_lock_fuse_bits_get(GET_LOW_FUSE_BITS));
-    writeString(F(" WDTCR="));
-    writeUnsignedByteHexWithPrefix(WDTCR);
-    writeString(F(" OSCCAL="));
-    writeUnsignedByteHexWithPrefix(OSCCAL);
-    write1Start8Data1StopNoParity('\n');
+    Serial.print(F("MCUSR=0x"));
+    Serial.print(sMCUSRStored);
+    Serial.print(F(" LFuse=0x"));
+    Serial.print(boot_lock_fuse_bits_get(GET_LOW_FUSE_BITS));
+    Serial.print(F(" WDTCR=0x"));
+    Serial.print(WDTCR);
+    Serial.print(F(" OSCCAL=0x"));
+    Serial.println(OSCCAL);
 #endif
 
     /*
@@ -207,7 +231,8 @@ void setup() {
      */
     initPeriodicSleepWithWatchdog(SLEEP_MODE_PWR_DOWN, WDTO_8S);
 // disable Arduino delay() and millis() timer0 and also its interrupts which kills the deep sleep.
-    TCCR0B = 0;
+    TCCR0B = 0; // No clock selected
+    TIMSK = 0;
 
     /*
      * Initialize ADC channel and reference
@@ -218,17 +243,17 @@ void setup() {
      * Signal power on with a single tone or signal reset with a double click.
      */
 #ifdef DEBUG
-    writeString(F("Booting from "));
+    Serial.print(F("Booting from "));
 #endif
     if (sMCUSRStored & (1 << PORF)) {
-        PWMtone(TONE_PIN, 2200, 100);
+        PWMtone(OPEN_WINDOW_ALARM_FREQUENCY_HIGH, 100);
 #ifdef DEBUG
-        writeString(F("power up \n"));
+        Serial.println(F("power up"));
 #endif
     } else {
         playDoubleClick();
 #ifdef DEBUG
-        writeString(F("reset \n"));
+        Serial.println(F("reset"));
 #endif
     }
 
@@ -247,7 +272,7 @@ void setup() {
 #ifdef ALARM_TEST
     if (!digitalRead(ALARM_TEST_PIN)) {
 #ifdef DEBUG
-        writeString(F("Test signal out\n"));
+        Serial.println(F("Test signal out"));
 #endif
         alarm();
     }
@@ -290,7 +315,7 @@ void setup() {
  */
 void loop() {
 
-    readTempAndManageHistory();
+    readTempAndManageHistory(); // needs 2 milliseconds
 
     // activate LED after reading to signal it. Do it here to reduce delay below.
     digitalWrite(LED_PIN, 1);
@@ -308,7 +333,7 @@ void loop() {
             && (sTemperatureArray[0] < sTemperatureArray[(sizeof(sTemperatureArray) / sizeof(sTemperatureArray[0])) - 2])) {
         // Start from beginning, clear temperature array
 #ifdef DEBUG
-        writeString(F("Detected porting to a colder place -> reset\n"));
+        Serial.println(F("Detected porting to a colder place -> reset"));
 #endif
         resetHistory();
     } else {
@@ -320,9 +345,9 @@ void loop() {
             // tTemperatureOldSum can be 0 -> do not use tTemperatureNewSum < tTemperatureOldSum - (TEMPERATURE_DELTA_THRESHOLD_DEGREE * TEMPERATURE_COMPARE_AMOUNT)
             if (sTemperatureNewSum + (TEMPERATURE_DELTA_THRESHOLD_DEGREE * TEMPERATURE_COMPARE_AMOUNT) < sTemperatureOldSum) {
 #ifdef DEBUG
-                writeString(F("Detected window just opened -> check again in "));
-                writeUnsignedByte(OPEN_WINDOW_ALARM_DELAY_MINUTES);
-                writeString(F(" minutes\n"));
+                Serial.print(F("Detected window just opened -> check again in "));
+                Serial.print(OPEN_WINDOW_ALARM_DELAY_MINUTES);
+                Serial.println(F(" minutes"));
 #endif
                 sTemperatureMinimumAfterWindowOpen = sTemperatureNewSum;
                 sTemperatureAtWindowOpen = sTemperatureNewSum;
@@ -330,45 +355,47 @@ void loop() {
                 sOpenWindowSampleDelayCounter = 0;
             }
         } else {
-
             /*
-             * Check if window already closed -> start a new detection
+             * Here open window is detected
+             * First check if window already closed -> start a new detection
              */
             if (sTemperatureNewSum > (sTemperatureMinimumAfterWindowOpen + TEMPERATURE_COMPARE_AMOUNT)) {
                 sOpenWindowDetected = false;
 #ifdef DEBUG
-                writeString(F("Detected window already closed -> start again\n"));
+                Serial.println(F("Detected window already closed -> start again"));
 #endif
-                // reset history in order to avoid a new detection next sample, since tTemperatureNewSum may still be lower than tTemperatureOldSum
+                // reset history in order to avoid a new detection at next sample, since tTemperatureNewSum may still be lower than tTemperatureOldSum
                 resetHistory();
             } else {
                 if (sTemperatureNewSum < sTemperatureMinimumAfterWindowOpen) {
-                    // set new minimum
+                    // set new minimum temperature
                     sTemperatureMinimumAfterWindowOpen = sTemperatureNewSum;
                 }
 
                 /*
-                 * Check for delay
+                 * Check if alarm delay was reached
                  */
                 sOpenWindowSampleDelayCounter++;
                 if (sOpenWindowSampleDelayCounter >= OPEN_WINDOW_SAMPLES) {
                     /*
-                     * After delay, check if still open - Temperature must be 1 degree lower than temperature at time of open detection
+                     * Here delay is reached
+                     * Check if still open - current temperature must be 1 degree lower than temperature at time of open detection
+                     * "- TEMPERATURE_COMPARE_AMOUNT": this reduces the sensibility, but helps to detect already closed windows.
+                     * You may remove this to increase sensibility.
                      */
                     if (sTemperatureNewSum <= sTemperatureAtWindowOpen - TEMPERATURE_COMPARE_AMOUNT) {
                         /*
-                         * Window still open -> ALARM
+                         * Window is still open -> ALARM
                          */
 #ifdef DEBUG
-                        writeString(F("Detected window still open -> alarm"));
-                        write1Start8Data1StopNoParity('\n');
+                        Serial.println(F("Detected window still open -> alarm"));
 #endif
                         alarm();
                     } else {
                         // Temperature not 1 degree lower than temperature at time of open detection
                         sOpenWindowDetected = false;
 #ifdef DEBUG
-                        writeString(F("Detected window maybe not really opened -> start again\n"));
+                        Serial.println(F("Assume wrong window open detection -> start again"));
 #endif
                     }
                 } // delay
@@ -381,7 +408,7 @@ void loop() {
      */
     checkVCCPeriodically(); // needs 4.5 ms
 
-    delayAndSignalOpenWindowDetectionAndLowVCC();
+    delayAndSignalOpenWindowDetectionAndLowVCC(); // Introduce a delay of 22 ms if open window is detected to let the LED light longer
     // deactivate LED before sleeping
     digitalWrite(LED_PIN, 0);
 
@@ -421,11 +448,10 @@ void changeDigisparkClock() {
     if (OSCCAL != tStoredOSCCAL) {
 #ifdef DEBUG
         uint8_t tOSCCAL = OSCCAL;
-        writeString(F("Changed OSCCAL from "));
-        writeUnsignedByteHexWithPrefix(tOSCCAL);
-        writeString(F(" to "));
-        writeUnsignedByteHexWithPrefix(tStoredOSCCAL);
-        write1Start8Data1StopNoParity('\n');
+        Serial.print(F("Changed OSCCAL from 0x"));
+        Serial.print(tOSCCAL);
+        Serial.print(F(" to 0x"));
+        Serial.println(tStoredOSCCAL);
 #endif
         // retrieve the factory-stored oscillator calibration bytes to revert the digispark OSCCAL tweak
         OSCCAL = tStoredOSCCAL;
@@ -433,13 +459,28 @@ void changeDigisparkClock() {
 }
 
 /*
- * Like tone(), but use OCR1B (PB4) + !OCR1B (PB3)
+ * Like tone(), but use OC1B (PB4) and (inverted) !OC1B (PB3)
  */
-void PWMtone(uint8_t aPin, unsigned int aFrequency, unsigned long aDurationMillis) {
-    tone(aPin, (unsigned long) aFrequency / 2, aDurationMillis); // specify half frequency -> PWM doubles it
-    TCCR1 = TCCR1 & 0x0F; // reset mode and disconnect OC1A pins, keep only prescaler
-    GTCCR = (1 << PWM1B) | (1 << COM1B0); // Switch to PWM Mode with OCR1B (PB4) + !OCR1B (PB3) outputs enabled
+void PWMtone(unsigned int aFrequency, unsigned int aDurationMillis) {
+
+    // Determine which prescaler to use, we are running with 1 MHz now
+    uint32_t tOCR = 1000000L / aFrequency;
+    uint8_t tPrescaler = 0x01;
+    while (tOCR > 0xff && tPrescaler < 15) {
+        tPrescaler++;
+        tOCR >>= 1;
+
+    }
+    OCR1C = tOCR - 1;
     OCR1B = OCR1C / 2; // set PWM to 50%
+    GTCCR = (1 << PWM1B) | (1 << COM1B0); // Switch to PWM Mode with OC1B (PB4) + !OC1B (PB3) outputs enabled
+    TCCR1 = (tPrescaler << CS10);
+
+    delayMilliseconds(aDurationMillis);
+    TCCR1 = 0; // Select no clock
+    GTCCR = 0; // Disconnect OC1B + !OC1B
+    digitalWrite(TONE_PIN_INVERTED, LOW);
+    digitalWrite(TONE_PIN, LOW);
 }
 
 /*
@@ -447,9 +488,9 @@ void PWMtone(uint8_t aPin, unsigned int aFrequency, unsigned long aDurationMilli
  */
 void playAlarmSignalSeconds(uint16_t aSecondsToPlay) {
 #ifdef DEBUG
-    writeString(F("Play alarm for "));
-    writeUnsignedInt(aSecondsToPlay);
-    writeString(F(" seconds\n"));
+    Serial.print(F("Play alarm for "));
+    Serial.print(aSecondsToPlay);
+    Serial.println(F(" seconds"));
 #endif
     uint16_t tCounter = (aSecondsToPlay * 10) / 13; // == ... * 1000 (ms per second) / (1300 ms for a loop)
     if (tCounter == 0) {
@@ -458,15 +499,11 @@ void playAlarmSignalSeconds(uint16_t aSecondsToPlay) {
     while (tCounter-- != 0) {
         // activate LED
         digitalWrite(LED_PIN, 1);
-        PWMtone(TONE_PIN, 1100);
-
-        delayMilliseconds(300);
+        PWMtone(OPEN_WINDOW_ALARM_FREQUENCY_LOW, 300);
 
         // deactivate LED
         digitalWrite(LED_PIN, 0);
-        PWMtone(TONE_PIN, 2200);
-
-        delayMilliseconds(1000);
+        PWMtone(OPEN_WINDOW_ALARM_FREQUENCY_HIGH, 1000);
     }
 }
 
@@ -501,7 +538,7 @@ void readTempAndManageHistory() {
         tIndex--;
     }
     /*
-     * Read new Temperature (typical 280 - 320 at 25 C) and add to sum
+     * Read new Temperature 16 times (typical 280 - 320 at 25 C) and add to sum
      * needs 2 ms
      */
     sTemperatureArray[0] = readADCChannelWithReferenceOversample(ADC_TEMPERATURE_CHANNEL_MUX, INTERNAL1V1, 4);
@@ -509,13 +546,12 @@ void readTempAndManageHistory() {
 
 #ifdef DEBUG
     // needs 4.4 ms
-    writeString(F("Temp="));
-    writeUnsignedInt(sTemperatureArray[0]);
-    writeString(F(" Old="));
-    writeUnsignedInt(sTemperatureOldSum);
-    writeString(F(" New="));
-    writeUnsignedInt(sTemperatureNewSum);
-    write1Start8Data1StopNoParity('\n');
+    Serial.print(F("Temp="));
+    Serial.print(sTemperatureArray[0]);
+    Serial.print(F(" Old="));
+    Serial.print(sTemperatureOldSum);
+    Serial.print(F(" New="));
+    Serial.println(sTemperatureNewSum);
 #endif
 }
 
@@ -526,7 +562,7 @@ bool checkForTemperatureRising() {
     if (sTemperatureArray[(sizeof(sTemperatureArray) / sizeof(sTemperatureArray[0])) - 1] != 0
             && sTemperatureNewSum > sTemperatureOldSum + (TEMPERATURE_DELTA_THRESHOLD_DEGREE * TEMPERATURE_COMPARE_AMOUNT)) {
 #ifdef DEBUG
-        writeString(F("Alarm - detected window already closed -> start again\n"));
+        Serial.println(F("Alarm - detected window already closed -> start again"));
 #endif
         sOpenWindowDetected = false;
         resetHistory();
@@ -562,7 +598,7 @@ void alarm() {
     }
 
 #ifdef DEBUG
-    writeString(F("After 10 minutes alarm now play it for 10 s with 24 to 600 s delay\n"));
+    Serial.println(F("After 10 minutes alarm now play it for 10 s with 24 to 600 s delay"));
 #endif
 
     uint16_t tDelay = 24;
@@ -575,9 +611,9 @@ void alarm() {
     }
     while (true) {
 #ifdef DEBUG
-        writeString(F("Alarm pause for "));
-        writeUnsignedInt(tDelay);
-        writeString(F(" seconds\n"));
+        Serial.print(F("Alarm pause for "));
+        Serial.print(tDelay);
+        Serial.println(F(" seconds"));
 #endif
         sleepDelay(tDelay); // Start with 24 seconds
         /*
@@ -598,15 +634,9 @@ void alarm() {
 }
 
 void playDoubleClick() {
-    PWMtone(TONE_PIN, 2200);
-    delayMicroseconds(2000);
-    noTone(TONE_PIN);
-
+    PWMtone(OPEN_WINDOW_ALARM_FREQUENCY_HIGH, 2);
     delayMilliseconds(100); // delay between clicks
-
-    PWMtone(TONE_PIN, 2200);
-    delayMicroseconds(2000);
-    noTone(TONE_PIN);
+    PWMtone(OPEN_WINDOW_ALARM_FREQUENCY_HIGH, 2);
 }
 
 /*
@@ -615,10 +645,8 @@ void playDoubleClick() {
  */
 void delayAndSignalOpenWindowDetectionAndLowVCC() {
     if (sOpenWindowDetected) {
-        PWMtone(TONE_PIN, 2200);
         sOpenWindowDetectedOld = true;
-        delayMicroseconds(2000); // 2000 can be heard as click
-        noTone(TONE_PIN);
+        PWMtone(OPEN_WINDOW_ALARM_FREQUENCY_HIGH, 2); // 2 ms can be heard as click
         delayMicroseconds(20000); // to let the led light longer
 
     } else if (sOpenWindowDetectedOld) {
@@ -627,9 +655,7 @@ void delayAndSignalOpenWindowDetectionAndLowVCC() {
         playDoubleClick();
 
     } else if (sVCCVoltageTooLow) {
-        PWMtone(TONE_PIN, 1600);
-        delayMicroseconds(20000);
-        noTone(TONE_PIN);
+        PWMtone(OPEN_WINDOW_ALARM_FREQUENCY_VCC_TOO_LOW, 2); // Use a different frequency to distinguish the this alert from others
     } else {
         delayMicroseconds(LED_PULSE_LENGTH - 150);  // - 150 for the duration from digitalWrite(LED_PIN, 1) until here
     }
@@ -704,15 +730,15 @@ void checkVCCPeriodically() {
     if (sVCCMonitoringDelayCounter == 0) {
         sVCCVoltageMillivolt = getVCCVoltageMillivolt();
 #ifdef DEBUG
-        writeString(F("VCC="));
-        writeUnsignedInt(sVCCVoltageMillivolt);
-        writeString(F("mV - "));
+        Serial.print(F("VCC="));
+        Serial.print(sVCCVoltageMillivolt);
+        Serial.print(F("mV - "));
         if (sLIPOSupplyDetected) {
-            writeString(F("LIPO"));
+            Serial.print(F("LIPO"));
         } else {
-            writeString(F("standard or button cell"));
+            Serial.print(F("standard or button cell"));
         }
-        writeString(" detected\n");
+        Serial.println(" detected");
 #endif
         if ((sLIPOSupplyDetected && sVCCVoltageMillivolt < VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT_LIPO)
                 || (!sLIPOSupplyDetected && sVCCVoltageMillivolt < VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT_STANDARD)) {
