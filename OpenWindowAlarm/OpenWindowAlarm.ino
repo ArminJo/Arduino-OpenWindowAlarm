@@ -73,8 +73,11 @@
 #include <avr/sleep.h> // needed for sleep_enable()
 #include <avr/wdt.h>   // needed for WDTO_8S
 
-#define VERSION "1.2.1"
+#define VERSION "1.2.2"
 /*
+ * Version 1.2.2
+ * - Converted to Serial.print.
+ * - New PWMTone() without tone().
  * Version 1.2.1
  * - Fixed bug in check for temperature rising after each alarm.
  * Version 1.2

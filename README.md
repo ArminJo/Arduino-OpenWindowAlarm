@@ -80,7 +80,7 @@ Adapt and run the `Burn_upgrade_micronucleus-t85_no_pullup.cmd` script and then 
 ## Module Samples
 | | |
 |---|---|
-| ![OpenWindowAlarm circuit with AAA batteries](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/Final-Version.jpg)<br/>Powered by 2 AAA batteries | ![OpenWindowAlarm circuit by CR2032](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/CR2032Front.jpg)<br/>Powered by CR2032 coin cell |
+| ![OpenWindowAlarm circuit with AAA batteries](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/Final-VersionAAA.jpg)<br/>Powered by 2 AAA batteries | ![OpenWindowAlarm circuit by CR2032](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/CR2032Front.jpg)<br/>Powered by CR2032 coin cell |
 | ![OpenWindowAlarm circuit with LiPo battery](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/Final-VersionLiPo.jpg)<br/>Powered by LiPo battery | ![OpenWindowAlarm circuit by CR2032](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/CR2032Back.jpg)<br/>Back viev with  CR2032 coin cell |
 
 Different reset buttons and connectors
@@ -89,7 +89,7 @@ Different reset buttons and connectors
 # Placement
 Place the board on a windowsill and connect it to the supply.
 If the temperature on the sill is lower than the temperature where the board was originally located, it will take additional 5 minutes to adopt to the new start value to avoid false alarm.
-![OpenWindowAlarm circuit with LiPo battery](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/OpenWindowAlarmLiPo.jpg)
+![OpenWindowAlarm circuit with LiPo battery](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/OpenWindowAlarmLiPo_2.jpg)
 
 # Internal Operation
 * An open window is detected after `TEMPERATURE_COMPARE_AMOUNT * TEMPERATURE_SAMPLE_SECONDS` (48) seconds of reading a temperature with a value of `TEMPERATURE_DELTA_THRESHOLD_DEGREE` (2) lower than the temperature `TEMPERATURE_COMPARE_DISTANCE * TEMPERATURE_SAMPLE_SECONDS` (192 -> 3 minutes and 12 seconds) seconds before.
@@ -111,6 +111,9 @@ If the temperature on the sill is lower than the temperature where the board was
 * If you enable DEBUG by commenting out line 49, you can monitor the serial output with 115200 baud at P2 to see what is happening.
 
 # Revision History
+### Version 1.2.2
+- Converted to Serial.print.
+- New PWMTone() without tone().
 ### Version 1.2.1
 - Fixed bug in check for temperature rising after each alarm.
 ### Version 1.2
