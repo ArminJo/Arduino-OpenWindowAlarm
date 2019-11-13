@@ -9,7 +9,7 @@ It senses the falling temperature and thus works best in winter. It requires onl
 
 | YouTube video | Instructable |
 |---------|------|
-| [![YouTube video](https://www.youtube.com/embed/6l_QOM59nyc)](https://youtu.be/6l_QOM59nyc)<br/> OpenWindowAlarm on a windowsill | [![Instructable](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/instructables-logo-v2.png)](https://www.instructables.com/id/Arduino-Open-Window-Detector-for-Winter/) |
+| [![YouTube video](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/OpenWindowAlarm1.jpg)](https://youtu.be/6l_QOM59nyc)<br/> OpenWindowAlarm on a windowsill | [![Instructable](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/instructables-logo-v2.png)](https://www.instructables.com/id/Arduino-Open-Window-Detector-for-Winter/) |
 
 # Function
 Every 24 seconds a reading is taken of the ATtiny internal temperature sensor which has a resolution of 1 degree.
