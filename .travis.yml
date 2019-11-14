@@ -41,7 +41,7 @@ script:
 # 1MHz ATtiny
 # Digispark is missing line for recipe.output.tmp_file in boards.txt
 #- arduino-cli compile --debug --verbose --warnings all --fqbn digistump:avr:digispark-tiny1 OpenWindowAlarm 
-- arduino-cli compile --verbose --warnings all --fqbn ATTinyCore:avr:attinyx5 OpenWindowAlarm 
+- arduino-cli compile --warnings all --fqbn ATTinyCore:avr:attinyx5 OpenWindowAlarm 
 notifications:
   email:
     recipients:
