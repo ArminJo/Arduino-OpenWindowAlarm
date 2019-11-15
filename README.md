@@ -1,5 +1,5 @@
-# OpenWindowAlarm
-
+# [OpenWindowAlarm](https://github.com/ArminJo/Arduino-OpenWindowAlarm)
+### Version 1.2.2
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Build Status](https://travis-ci.org/ArminJo/Arduino-OpenWindowAlarm.svg?branch=master)](https://travis-ci.org/ArminJo/Arduino-OpenWindowAlarm)
 [![Hit Counter](https://hitcounter.pythonanywhere.com/count/tag.svg?url=https%3A%2F%2Fgithub.com%2FArminJo%2FArduino-OpenWindowAlarm)](https://github.com/brentvollebregt/hit-counter)
@@ -7,6 +7,9 @@
 Place this on a windowsill and you will be alarmed if you leave the window open longer than five minutes.
 It senses the falling temperature and thus works best in winter. It requires only 0.006 milliampere. This means one battery will last the whole winter.
 
+### [Driver installation ->](https://github.com/ArminJo/Arduino-OpenWindowAlarm#driver-installation)
+
+### Sourcecode
 Der **Sourcecode** kann von [hier](https://raw.githubusercontent.com/ArminJo/Arduino-OpenWindowAlarm/master/OpenWindowAlarm/OpenWindowAlarm.ino) kopiert werden.<br/>
 Das Programm ist auch als Beispiel der Arduino "ATtinySerialOut" Bibliothek - unter *Datei -> Beispiele -> Beispiele aus eigenen Bibliotheken* verfügbar. Die Bilbliothek kann mit *Werkzeuge -> Bibliotheken verwalten...* oder *Strg+Umschalt+I* geladen werden. Dabei "SerialOut" als Suchstring benutzen.
 
@@ -17,11 +20,11 @@ The application is also available as an example of the Arduino "ATtinySerialOut"
 |---------|------|
 | [![YouTube video](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/OpenWindowAlarm1.jpg)](https://youtu.be/6l_QOM59nyc)<br/> OpenWindowAlarm on a windowsill | [![Instructable](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/instructables-logo-v2.png)](https://www.instructables.com/id/Arduino-Open-Window-Detector-for-Winter/) |
 
-# Function
+# Functional overview
 Every 24 seconds a reading is taken of the ATtiny internal temperature sensor which has a resolution of 1 degree.
-If temperature is lower than the "old" temperature value, an alarm is issued five minutes later if by then the condition still holds true.<br/>
-A detection of an open window is indicated by a longer 20 ms blink and a short click every 24 seconds.
-A low battery is indicated by beeping and flashing the LED every 24 seconds. Only the beep (not the flash) is significantly longer than the beep for an open window detection.
+If temperature is lower than the "old" temperature value, an **alarm is issued five minutes later** if by then the condition still holds true.<br/>
+**Detection of an open window** is indicated by a longer 20 ms blink and a short click every 24 seconds.
+**Low battery** is indicated by beeping and flashing the LED every 24 seconds. Only the beep (not the flash) is significantly longer than the beep for an open window detection.
 
 # How to make your own
 ### The parts you need:
@@ -31,20 +34,26 @@ A low battery is indicated by beeping and flashing the LED every 24 seconds. Onl
 |---|---|---|
 | ![AAA battery case](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/BatteryCase.jpg) | ![CR2032 holder](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/CR2032Holder.jpg) | ![LiPo battery](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/LiPo.jpg) |
 
-
 ## Programming the Digispark board
 ### Installation of Digispark for the Arduino IDE
 Install the Digispark board for the Arduino IDE as described in http://digistump.com/wiki/digispark/tutorials/connecting
 Since we want to save power, the board clock is switched to 1 MHz in our setup() so please choose **Digispark (1mhz - No USB)**
 as board in the `Tools` menu in order to set the right timing.
 
+## Driver installation
+You must install the **Digispark driver** before you can program the Board. Download it [here](https://github.com/digistump/DigistumpArduino/releases/download/1.6.7/Digistump.Drivers.zip), open it and run InstallDrivers.exe.
+
+Leider muss der Treiber für das Digispark Board manuell installiert werden. Der **Digispark Treiber** kann von [hier](https://github.com/digistump/DigistumpArduino/releases/download/1.6.7/Digistump.Drivers.zip) heruntergeladen werden. Dann die Datei öffnen und `InstallDrivers.exe` ausführen.<br/>
+Wenn die Digispark Boards in der Arduino IDE schon installiert sind, ist der Treiber bereits auf der Platte unter `C:\Users\<Benutzername>\AppData\Local\Arduino15\packages\digistump\tools\micronucleus\2.0a4`. Am einfachsten installiert man ihn, wenn man das Board einsteckt und wenn das unbekannte Gerät im Geräte-Manager auftaucht, *Treiber aktualisieren* auswählt. Dann *Auf dem Computer nach Treibersoftware suchen* wählen, `C:\Users\<username>` wählen und *Weiter* klicken.<br/>
+Bei der Nachfrage "Möchten sie diese Gerätesoftware installieren" auf "installieren" klicken.
+
+Wenn das **Board nicht erkannt** wird (kein Geräusch beim Einstecken) kann es daran liegen, dass die Buchse zu tief ist, dann eine ander Buchse oder ein USB Verlängerungskabel benutzen.
+
 ### Compile and upload the program to the board
-In the Arduino IDE create a new sketch with `File/New` and name it e.g. "`OpenWindowAlarm`".
-Copy the code from [OpenWindowAlarm.ino](https://raw.githubusercontent.com/ArminJo/Arduino-OpenWindowAlarm/master/OpenWindowAlarm/OpenWindowAlarm.ino)
-
-**OR**
-
-Download and extract the repository. Open the sketch with `File/Open`... and select the "`OpenWindowAlarm`" folder.
+In the Arduino IDE create a new sketch with *File -> New* and name it e.g. "`OpenWindowAlarm`".
+Copy the code from [OpenWindowAlarm.ino](https://raw.githubusercontent.com/ArminJo/Arduino-OpenWindowAlarm/master/OpenWindowAlarm/OpenWindowAlarm.ino)<br/>
+**OR**<br/>
+Download and extract the repository. Open the sketch with *File -> Open...* and select the "`OpenWindowAlarm`" folder.
 
 Compile and upload it. Keep in mind, that upload will not work if the speaker is connected.
 If everything works well, the built-in LED of the Digispark will blink 5 times (for the 5 minutes alarm delay) and then start flashing after 8 seconds with an interval of 24 seconds to signal each temperature reading.
@@ -61,8 +70,10 @@ The board now needs 2.5/3.5 mA at 3.7/5 volt and the 2000mAh battery will last f
 **This disables the USB interface** and in turn the possibility to program the Digispark board via USB. To **enable it again**, but still save power, **connect the resistor (marked 152) directly to the USB 5 volt** that is easily available at one side of the diode.<br/>
 The correct side of the diode can be found by using a continuity tester. One side of this diode is connected to pin 8 of the ATtiny (VCC). The other side is connected to the USB 5 volt.
 
-Now the USB pullup resistor is only activated if the Digispark board is connected to USB e.g. during programming and the board consumes 5-9 ÂµA during battery operation.
-
+Now the USB pullup resistor is only activated if the Digispark board is connected to USB e.g. during programming.<br/>
+The board consumes 5-9 ÂµA during battery operation.<br/>
+The software loop needs 2.1 ms and with DEBUG 6.5 ms => active time is around 1/10000 or 1/4000 of total time.
+During the loop the power consumption is 500 times more than sleep => Loop adds only 5% to 12% to total power consumption.
 
 ## Reset button
 **If you do not want to remove power to reset the alarm**, connect a reset button between PB5 and ground.
@@ -83,7 +94,7 @@ Adapt and run the `Burn_upgrade_micronucleus-t85_no_pullup.cmd` script and then 
 | ![Loudspeaker disassembly](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/Loudspeaker1.jpg) | ![Loudspeaker disassembly](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/Loudspeaker2.jpg) |
 
 
-## Module Samples
+## Module samples
 | | |
 |---|---|
 | ![OpenWindowAlarm circuit with AAA batteries](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/Final-VersionAAA.jpg)<br/>Powered by 2 AAA batteries | ![OpenWindowAlarm circuit by CR2032](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/CR2032Front.jpg)<br/>Powered by CR2032 coin cell |
@@ -97,24 +108,29 @@ Place the board on a windowsill and connect it to the supply.
 If the temperature on the sill is lower than the temperature where the board was originally located, it will take additional 5 minutes to adopt to the new start value to avoid false alarm.
 ![OpenWindowAlarm circuit with LiPo battery](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/OpenWindowAlarmLiPo_2.jpg)
 
-# Internal Operation
-* An open window is detected after `TEMPERATURE_COMPARE_AMOUNT * TEMPERATURE_SAMPLE_SECONDS` (48) seconds of reading a temperature with a value of `TEMPERATURE_DELTA_THRESHOLD_DEGREE` (2) lower than the temperature `TEMPERATURE_COMPARE_DISTANCE * TEMPERATURE_SAMPLE_SECONDS` (192 -> 3 minutes and 12 seconds) seconds before.
-* The delay is implemented by sleeping 3 times at `SLEEP_MODE_PWR_DOWN` for a period of 8 seconds to reduce power consumption.
+# Internal operation
+* An open window is detected after `TEMPERATURE_COMPARE_AMOUNT * TEMPERATURE_SAMPLE_SECONDS` (48) seconds of reading a temperature with a value of `TEMPERATURE_DELTA_THRESHOLD_DEGREE` (2) lower 
+    than the temperature `TEMPERATURE_COMPARE_DISTANCE * TEMPERATURE_SAMPLE_SECONDS` (192 seconds-> 3 minutes and 12 seconds) before.
+* The delay is implemented by sleeping 3 times at `SLEEP_MODE_PWR_DOWN` for a period of 8 seconds -the maximum hardware sleep time- to reduce power consumption.
 
-* A detection of an open window is indicated by a longer 20 ms blink and a short click every 24 seconds.
+* If an **open window is detected**, this is indicated by a longer **20 ms blink** and a **short click** every 24 seconds.
    Therefore, the internal sensor has a time of 3 minutes to adjust to the outer temperature in order to capture even small changes in temperature.
    The greater the temperature change the earlier the sensor value will change and detect an open window.
    
-* `OPEN_WINDOW_ALARM_DELAY_MINUTES` (5) minutes after open window detection the alarm is activated.<br/>
+* `OPEN_WINDOW_ALARM_DELAY_MINUTES` (5) minutes after open window detection the **alarm is activated**.<br/>
     The alarm will not start or an activated alarm will stop if the current temperature is greater than the minimum measured temperature (+ 1) i.e. the window has been closed already.
     
-* The initial alarm lasts for 10 minutes. After this, it is activated for a period of 10 seconds with a increasing break from 24 seconds up to 5 minutes.
+* The **initial alarm** lasts for 10 minutes. After this, it is activated for a period of 10 seconds with a increasing break from 24 seconds up to 5 minutes.
 
-* Every `VCC_MONITORING_DELAY_MIN` (60) minutes the battery voltage is measured. Depending on the detected battery type at power-on (see `VCC_VOLTAGE_LIPO_DETECTION` (3.6 volt)), a battery voltage below `VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT_LIPO` (3550) or `VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT_STANDARD` Millivolt is indicated by beeping and flashing the LED every 24 seconds. Only the beep (not the flash) is significantly longer than the beep for an open window detection.
+* At **power-on** the VCC voltage is measured used to **determine the type of battery**  using `VCC_VOLTAGE_LIPO_DETECTION` (3.6 volt).
 
-* After power-on, the inactive settling time is 5 minutes. If the board is getting colder during the settling time, 4:15 (or 8:30) minutes are added to avoid false alarms after power-on.
+* Every `VCC_MONITORING_DELAY_MIN` (60) minutes the battery voltage is measured. Depending on the detected battery type, **low battery voltage** is indicated by **beeping and flashing the LED every 24 seconds**.
+    Only the beep (not the flash) is significantly longer than the beep for an open window detection.<br/>
+    Low battery voltage is defined by `VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT_LIPO` (3550 Millivolt) or `VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT_STANDARD` (2350 Millivolt).
 
-* If you enable DEBUG by commenting out line 49, you can monitor the serial output with 115200 baud at P2 to see what is happening.
+* After power-on, the **inactive settling time** is 5 minutes. If the board is getting colder during the settling time, 4:15 (or 8:30) minutes are added to avoid false alarms after power-on.
+
+* If you enable `DEBUG` by commenting out line 60, you can monitor the serial output with 115200 baud at P2 to see what is happening.
 
 # Revision History
 ### Version 1.2.2

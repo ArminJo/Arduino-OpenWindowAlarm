@@ -7,29 +7,29 @@
  * Detection of an open window is indicated by a longer 20 ms blink and a short click every 24 seconds.
  * A low battery (below 3.55 volt for LiPo) is indicated by beeping and flashing LED every 24 seconds. Only the beep (not the flash) is significantly longer than at open window detection.
  *
- * Detailed description:
- * Open window is detected after `TEMPERATURE_COMPARE_AMOUNT * TEMPERATURE_SAMPLE_SECONDS` (48) seconds of reading a temperature
- * which value is `TEMPERATURE_DELTA_THRESHOLD_DEGREE` (2) lower than the temperature `TEMPERATURE_COMPARE_DISTANCE * TEMPERATURE_SAMPLE_SECONDS` (192 -> 3 minutes and 12 seconds) seconds before.
- * The delay is implemented by 3 times sleeping at `SLEEP_MODE_PWR_DOWN` for a period of 8 seconds to reduce power consumption.
- * Detection of an open window is indicated by a longer 20 ms blink and a short click every 24 seconds.
- * Therefore, the internal sensor has 3 minutes time to adjust to the outer temperature, to get even small changes in temperature.
- * The greater the temperature change the earlier the sensor value will change and detect an open window.
- * After open window detection Alarm is activated after `OPEN_WINDOW_ALARM_DELAY_MINUTES` (5).
- *   The alarm will not sound the current temperature is greater than the minimum measured temperature (+ 1) i.e. the window has been closed already.
- *
- * At startup, the battery voltage is measured and recognized if the module is operating on one LIPO battery or two standard AA / AAA batteries.
- * Every `VCC_MONITORING_DELAY_MIN` (60) minutes the battery voltage is measured. A battery voltage below `VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT_LIPO` (3550) Millivolt
- * or below `VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT_STANDARD` (2350) mV is indicated by beeping and flashing LED every 24 seconds. Only the beep (not the flash) is significantly longer than at open window detection.
- *
- * The initial alarm lasts for 10 minutes. After this, it is activated for a period of 10 seconds with a increasing break from 24 seconds up to 5 minutes.
- * Check temperature at each end of break interval to discover closed window, if window was closed during the silent break, but device was not reset.
- *
- * After power up or reset, the inactive settling time is 5 minutes or additionally 4:15 (or 8:30) minutes if the board is getting colder during the settling time, to avoid false alarms after boot.
+ * Internal operation:
+ * An open window is detected after `TEMPERATURE_COMPARE_AMOUNT * TEMPERATURE_SAMPLE_SECONDS` (48) seconds of reading a temperature with a value of `TEMPERATURE_DELTA_THRESHOLD_DEGREE` (2) lower
+   than the temperature `TEMPERATURE_COMPARE_DISTANCE * TEMPERATURE_SAMPLE_SECONDS` (192 seconds-> 3 minutes and 12 seconds) before.
+ * The delay is implemented by sleeping 3 times at `SLEEP_MODE_PWR_DOWN` for a period of 8 seconds -the maximum hardware sleep time- to reduce power consumption.
+ * If an **open window is detected**, this is indicated by a longer **20 ms blink** and a **short click** every 24 seconds.
+     Therefore, the internal sensor has a time of 3 minutes to adjust to the outer temperature in order to capture even small changes in temperature.
+     The greater the temperature change the earlier the sensor value will change and detect an open window.
+ * `OPEN_WINDOW_ALARM_DELAY_MINUTES` (5) minutes after open window detection the **alarm is activated**.<br/>
+     The alarm will not start or an activated alarm will stop if the current temperature is greater than the minimum measured temperature (+ 1) i.e. the window has been closed already.
+ * The **initial alarm** lasts for 10 minutes. After this, it is activated for a period of 10 seconds with a increasing break from 24 seconds up to 5 minutes.
+ * At **power-on** the VCC voltage is measured used to **determine the type of battery**  using `VCC_VOLTAGE_LIPO_DETECTION` (3.6 volt).
+ * Every `VCC_MONITORING_DELAY_MIN` (60) minutes the battery voltage is measured. Depending on the detected battery type, **low battery voltage** is indicated by **beeping and flashing the LED every 24 seconds**.
+     Only the beep (not the flash) is significantly longer than the beep for an open window detection.<br/>
+     Low battery voltage is defined by `VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT_LIPO` (3550 Millivolt) or `VCC_VOLTAGE_LOWER_LIMIT_MILLIVOLT_STANDARD` (2350 Millivolt).
+ * After power-on, the **inactive settling time** is 5 minutes. If the board is getting colder during the settling time, 4:15 (or 8:30) minutes are added to avoid false alarms after power-on.
+
+ * If you enable `DEBUG` by commenting out line 60, you can monitor the serial output with 115200 baud at P2 to see what is happening.
  *
  * Power consumption:
  * Power consumption is 6uA at sleep and 2.8 mA at at 1 MHz active.
- * Loop needs 2.1 ms and with DEBUG 6.5 ms => active time is ca. 1/10k or 1/4k of total time and power consumption is 500 times more than sleep.
- *   => Loop adds 5% to 12% to total power consumption.
+ * The software loop needs 2.1 ms and with DEBUG 6.5 ms => active time is around 1/10000 or 1/4000 of total time.
+ * During the loop the power consumption is 500 times more than sleep => Loop adds only 5% to 12% to total power consumption.
+ *
  *
  *  Copyright (C) 2018-19  Armin Joachimsmeyer
  *  armin.joachimsmeyer@gmail.com
