@@ -5,7 +5,7 @@
 [![Hit Counter](https://hitcounter.pythonanywhere.com/count/tag.svg?url=https%3A%2F%2Fgithub.com%2FArminJo%2FArduino-OpenWindowAlarm)](https://github.com/brentvollebregt/hit-counter)
 
 Place this on a windowsill and you will be alarmed if you leave the window open longer than five minutes.
-It senses the falling temperature and thus works best in winter. It requires only 0.006 milliampere. This means one battery will last the whole winter.
+It senses the falling temperature and thus works best in winter. It requires only 0.026 milliampere. This means one battery will last the whole winter.
 
 ### [Driver installation ->](https://github.com/ArminJo/Arduino-OpenWindowAlarm#driver-installation)
 
@@ -24,7 +24,7 @@ The application is also available as an example of the Arduino "ATtinySerialOut"
 Every 24 seconds a reading is taken of the ATtiny internal temperature sensor which has a resolution of 1 degree.
 If temperature is lower than the "old" temperature value, an **alarm is issued five minutes later** if by then the condition still holds true.<br/>
 **Detection of an open window** is indicated by a longer 20 ms blink and a short click every 24 seconds.
-**Low battery** is indicated by beeping and flashing the LED every 24 seconds. Only the beep (not the flash) is significantly longer than the beep for an open window detection.
+**Low battery** is indicated by beeping and flashing the LED every 24 seconds. The beep and the flash are longer than for an open window detection.
 
 # How to make your own
 ### The parts you need:
@@ -37,23 +37,24 @@ If temperature is lower than the "old" temperature value, an **alarm is issued f
 ## Programming the Digispark board
 ### Installation of Digispark for the Arduino IDE
 Install the Digispark board for the Arduino IDE as described in http://digistump.com/wiki/digispark/tutorials/connecting
-Since we want to save power, the board clock is switched to 1 MHz in our setup() so please choose **Digispark (1mhz - No USB)**
-as board in the `Tools` menu in order to set the right timing.
+Since we want to save power, the board clock is switched to 1 MHz in our setup() so you can choose **Digispark (1mhz - No USB)**
+as board in the `Tools` menu.
 
 ## Driver installation
 You must install the **Digispark driver** before you can program the Board. Download it [here](https://github.com/digistump/DigistumpArduino/releases/download/1.6.7/Digistump.Drivers.zip), open it and run InstallDrivers.exe.
 
+### German instructions
 Leider muss der Treiber für das Digispark Board manuell installiert werden. Der **Digispark Treiber** kann von [hier](https://github.com/digistump/DigistumpArduino/releases/download/1.6.7/Digistump.Drivers.zip) heruntergeladen werden. Dann die Datei öffnen und `InstallDrivers.exe` ausführen.<br/>
 Wenn die Digispark Boards in der Arduino IDE schon installiert sind, ist der Treiber bereits auf der Platte unter `C:\Users\<Benutzername>\AppData\Local\Arduino15\packages\digistump\tools\micronucleus\2.0a4`. Am einfachsten installiert man ihn, wenn man das Board einsteckt und wenn das unbekannte Gerät im Geräte-Manager auftaucht, *Treiber aktualisieren* auswählt. Dann *Auf dem Computer nach Treibersoftware suchen* wählen, `C:\Users\<username>` wählen und *Weiter* klicken.<br/>
-Bei der Nachfrage "Möchten sie diese Gerätesoftware installieren" auf "installieren" klicken.
+Bei der Nachfrage *Möchten sie diese Gerätesoftware installieren* auf *installieren* klicken.
 
 Wenn das **Board nicht erkannt** wird (kein Geräusch beim Einstecken) kann es daran liegen, dass die Buchse zu tief ist, dann eine ander Buchse oder ein USB Verlängerungskabel benutzen.
 
 ### Compile and upload the program to the board
-In the Arduino IDE create a new sketch with *File -> New* and name it e.g. "`OpenWindowAlarm`".
+In the Arduino IDE create a new sketch with *File -> New* and name it e.g. `OpenWindowAlarm`.
 Copy the code from [OpenWindowAlarm.ino](https://raw.githubusercontent.com/ArminJo/Arduino-OpenWindowAlarm/master/OpenWindowAlarm/OpenWindowAlarm.ino)<br/>
 **OR**<br/>
-Download and extract the repository. Open the sketch with *File -> Open...* and select the "`OpenWindowAlarm`" folder.
+Download and extract the repository. Open the sketch with *File -> Open...* and select the `OpenWindowAlarm` folder.
 
 Compile and upload it. Keep in mind, that upload will not work if the speaker is connected.
 If everything works well, the built-in LED of the Digispark will blink 5 times (for the 5 minutes alarm delay) and then start flashing after 8 seconds with an interval of 24 seconds to signal each temperature reading.
@@ -62,7 +63,7 @@ If everything works well, the built-in LED of the Digispark will blink 5 times (
 Before power reduction changes
 ![Final power reduction](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/Digispark.jpg)
 
-We now have a Digispark board that consumes 6/9.5 mA at 3,7/5 volt. With a battery of **2000 mAh** it will run for **9 days**. But it is possible to reduce power consumption to **6-9 ÂµA** in 3 Steps.
+We now have a Digispark board that consumes 6/9.5 mA at 3,7/5 volt. With a battery of **2000 mAh** it will run for **9 days**. But it is possible to reduce power consumption to **26 µA** in 3 Steps.
 1. **Disabling the power LED** by breaking the copper wire that connects the power LED to the diode with a knife or removing / disabling the 102 resistor saves 2/2.2 mA.
 2. **Removing the VIN voltage regulator** saves 1.5/3.8 mA.<br/>
 The board now needs 2.5/3.5 mA at 3.7/5 volt and the 2000mAh battery will last for 23 days.
@@ -71,9 +72,12 @@ The board now needs 2.5/3.5 mA at 3.7/5 volt and the 2000mAh battery will last f
 The correct side of the diode can be found by using a continuity tester. One side of this diode is connected to pin 8 of the ATtiny (VCC). The other side is connected to the USB 5 volt.
 
 Now the USB pullup resistor is only activated if the Digispark board is connected to USB e.g. during programming.<br/>
-The board consumes 5-9 ÂµA during battery operation.<br/>
-The software loop needs 2.1 ms and with DEBUG 6.5 ms => active time is around 1/10000 or 1/4000 of total time.
-During the loop the power consumption is 500 times more than sleep => Loop adds only 5% to 12% to total power consumption.
+The board now consumes **26 µA** during sleep.<br/>
+The software loop needs 2.1 ms and with DEBUG 6.5 ms (plus 3 times 1 ms startup time) => active time is around 1/5000 or 1/2500 of total time.
+During the loop the power consumption is 100 times more than sleep => Loop adds only **2% to 4%** to total power consumption.<br/>
+If you reprogram the fuses, you can get **6 µA** power consumption.<br/>
+To reprogram the fuses, you can use the `Write_Fuses_Micronucleus_Mode_E1_DF_FE.cmd` or even better the `Burn_direct_avrdude-t85_entry_on_power_on_no_pullup.cmd` script provided in the repo.<br/>
+For the 6 uA scenario, loop current is 500 times and startup time is negligible => loop adds **5% to 12%** to total (lower) power consumption.
 
 ## Reset button
 **If you do not want to remove power to reset the alarm**, connect a reset button between PB5 and ground.
@@ -133,6 +137,9 @@ If the temperature on the sill is lower than the temperature where the board was
 * If you enable `DEBUG` by commenting out line 60, you can monitor the serial output with 115200 baud at P2 to see what is happening.
 
 # Revision History
+### Version 1.3.0
+- Changed voltage low detection.
+- Improved DEBUG output.
 ### Version 1.2.2
 - Converted to Serial.print.
 - New PWMTone() without tone().
