@@ -38,7 +38,7 @@ If temperature is lower than the "old" temperature value, an **alarm is issued f
 ### Installation of Digispark for the Arduino IDE
 Install the Digispark board for the Arduino IDE as described in http://digistump.com/wiki/digispark/tutorials/connecting
 Since we want to save power, the board clock is switched to 1 MHz in our setup() so you can choose **Digispark (1mhz - No USB)**
-as board in the `Tools` menu.
+as board in the *Tools* menu.
 
 ## Driver installation
 You must install the **Digispark driver** before you can program the Board. Download it [here](https://github.com/digistump/DigistumpArduino/releases/download/1.6.7/Digistump.Drivers.zip), open it and run InstallDrivers.exe.
@@ -179,4 +179,4 @@ Temp=296 Old=296 New=592
 Temp=296 Old=592 New=592
 Temp=296 Old=592 New=592
 ```
-
+#### If you find this program useful, please give it a star.
