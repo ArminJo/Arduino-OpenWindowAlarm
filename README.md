@@ -41,7 +41,7 @@ Since we want to save power, the board clock is switched to 1 MHz in our setup()
 as board in the *Tools* menu.
 
 ## Driver installation
-You must install the **Digispark driver** before you can program the Board. Download it [here](https://github.com/digistump/DigistumpArduino/releases/download/1.6.7/Digistump.Drivers.zip), open it and run InstallDrivers.exe.
+For Windows you must install the **Digispark driver** before you can program the board. Download it [here](https://github.com/digistump/DigistumpArduino/releases/download/1.6.7/Digistump.Drivers.zip), open it and run `InstallDrivers.exe`.
 
 ### German instructions
 Leider muss der Treiber für das Digispark Board manuell installiert werden. Der **Digispark Treiber** kann von [hier](https://github.com/digistump/DigistumpArduino/releases/download/1.6.7/Digistump.Drivers.zip) heruntergeladen werden. Dann die Datei öffnen und `InstallDrivers.exe` ausführen.<br/>
@@ -68,7 +68,7 @@ We now have a Digispark board that consumes 6/9.5 mA at 3,7/5 volt. With a batte
 2. **Removing the VIN voltage regulator** saves 1.5/3.8 mA.<br/>
 The board now needs 2.5/3.5 mA at 3.7/5 volt and the 2000mAh battery will last for 23 days.
 3. **Disconnecting the USB Pullup resistor** (marked 152) from 5 volt (VCC) saves the remaining 2.5/3.5 mA. Disconnect it by breaking the copper wire on the side of the resistor that points to the ATtiny.<br/>
-**This disables the USB interface** and in turn the possibility to program the Digispark board via USB. To **enable it again**, but still save power, **connect the resistor (marked 152) directly to the USB 5 volt** that is easily available at one side of the diode.<br/>
+**This disables the USB interface** and in turn the possibility to program the Digispark board via USB. To **enable it again**, but still save power, **connect the resistor (marked 152) directly to the USB 5 volt** that is easily available at the outer side of the diode.<br/>
 The correct side of the diode can be found by using a continuity tester. One side of this diode is connected to pin 8 of the ATtiny (VCC). The other side is connected to the USB 5 volt.
 
 Now the USB pullup resistor is only activated if the Digispark board is connected to USB e.g. during programming.<br/>
@@ -76,8 +76,9 @@ The board now consumes **26 µA** during sleep.<br/>
 The software loop needs 2.1 ms and with DEBUG 6.5 ms (plus 3 times 1 ms startup time) => active time is around 1/5000 or 1/2500 of total time.
 During the loop the power consumption is 100 times more than sleep => Loop adds only **2% to 4%** to total power consumption.<br/>
 If you reprogram the fuses, you can get **6 µA** power consumption.<br/>
-To reprogram the fuses, you can use the `Write_Fuses_Micronucleus_Mode_E1_DF_FE.cmd` or even better the `Burn_direct_avrdude-t85_entry_on_power_on_no_pullup.cmd` script provided in the repo.<br/>
-For the 6 uA scenario, loop current is 500 times and startup time is negligible => loop adds **5% to 12%** to total (lower) power consumption.
+To reprogram the fuses, you need an ISP (which can be build with an [Arduino](https://www.google.de/search?q=arduino+as+isp)) and a connecting adapter.
+For reprogramming you can use the `Burn_avrdude+fuses-t85_entry_on_power_on_no_pullup.cmd` script provided in the repo.<br/>
+For the 6 µA scenario, loop current is 500 times and startup time is negligible => loop adds **5% to 12%** to total (lower) power consumption.
 
 ## Reset button
 **If you do not want to remove power to reset the alarm**, connect a reset button between PB5 and ground.
@@ -102,7 +103,8 @@ Adapt and run the `Burn_upgrade_micronucleus-t85_no_pullup.cmd` script and then 
 | | |
 |---|---|
 | ![OpenWindowAlarm circuit with AAA batteries](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/Final-VersionAAA.jpg)<br/>Powered by 2 AAA batteries | ![OpenWindowAlarm circuit by CR2032](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/CR2032Front.jpg)<br/>Powered by CR2032 coin cell |
-| ![OpenWindowAlarm circuit with LiPo battery](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/Final-VersionLiPo.jpg)<br/>Powered by LiPo battery | ![OpenWindowAlarm circuit by CR2032](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/CR2032Back.jpg)<br/>Back viev with  CR2032 coin cell |
+| ![OpenWindowAlarm circuit with LiPo battery](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/Final-VersionLiPo.jpg)<br/>Powered by LiPo battery | ![OpenWindowAlarm circuit by CR2032](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/CR2032Back.jpg)<br/>Back viev with CR2032 coin cell |
+| ![OpenWindowAlarm circuit with buzzer](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/OpenWindowAlarm2AAA.jpg)<br/>With 16 Ohm buzzer from an old Pc | ![OpenWindowAlarm circuit compact version](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/Final-Version-Compact.jpg)<br/>Compact version |
 
 Different reset buttons and connectors
 ![OpenWindowAlarm circuit by CR2032](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/4Modules.jpg)
