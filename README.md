@@ -1,5 +1,5 @@
 # [OpenWindowAlarm](https://github.com/ArminJo/Arduino-OpenWindowAlarm)
-### Version 1.2.2
+### Version 1.3.1
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Build Status](https://travis-ci.org/ArminJo/Arduino-OpenWindowAlarm.svg?branch=master)](https://travis-ci.org/ArminJo/Arduino-OpenWindowAlarm)
 [![Hit Counter](https://hitcounter.pythonanywhere.com/count/tag.svg?url=https%3A%2F%2Fgithub.com%2FArminJo%2FArduino-OpenWindowAlarm)](https://github.com/brentvollebregt/hit-counter)
@@ -11,7 +11,7 @@ It senses the falling temperature and thus works best in winter. It requires onl
 
 ### Sourcecode
 Der **Sourcecode** kann von [hier](https://raw.githubusercontent.com/ArminJo/Arduino-OpenWindowAlarm/master/OpenWindowAlarm/OpenWindowAlarm.ino) kopiert werden.<br/>
-Das Programm ist auch als Beispiel der Arduino "ATtinySerialOut" Bibliothek - unter *Datei -> Beispiele -> Beispiele aus eigenen Bibliotheken* verfügbar. Die Bilbliothek kann mit *Werkzeuge -> Bibliotheken verwalten...* oder *Strg+Umschalt+I* geladen werden. Dabei "SerialOut" als Suchstring benutzen.
+Das Programm ist auch als Beispiel der Arduino "ATtinySerialOut" Bibliothek - unter *Datei -> Beispiele -> Beispiele aus eigenen Bibliotheken* verfügbar. Die Bibliothek kann mit *Werkzeuge -> Bibliotheken verwalten...* oder *Strg+Umschalt+I* geladen werden. Dabei "SerialOut" als Suchstring benutzen.
 
 The **sourcecode** can be copied from [here](https://raw.githubusercontent.com/ArminJo/Arduino-OpenWindowAlarm/master/OpenWindowAlarm/OpenWindowAlarm.ino).<br/>
 The application is also available as an example of the Arduino "ATtinySerialOut" library - use *File -> Examples -> Examples from Custom Libraries*. You can load the library with *Tools -> Manage Libraries...* or *Ctrl+Shift+I*. Use "SerialOut" as filter string.
@@ -139,6 +139,8 @@ If the temperature on the sill is lower than the temperature where the board was
 * If you enable `DEBUG` by commenting out line 60, you can monitor the serial output with 115200 baud at P2 to see what is happening.
 
 # Revision History
+###Version 1.3.1
+- Check for closed window happens only the first 10 minutes of alarm.
 ### Version 1.3.0
 - Changed voltage low detection.
 - Improved DEBUG output.
