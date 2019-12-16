@@ -378,6 +378,8 @@ char nibbleToHex(uint8_t aByte) {
     return aByte + 'A' - 10;
 }
 
+
+
 /*
  * 2 Byte Hex output with 2 Byte prefix "0x"
  */
@@ -389,6 +391,11 @@ void TinySerialOut::printHex(uint8_t aByte) {
     tStringBuffer[3] = nibbleToHex(aByte);
     tStringBuffer[4] = '\0';
     writeString(tStringBuffer);
+}
+
+void TinySerialOut::printlnHex(uint8_t aByte) {
+    printHex(aByte);
+    print('\n');
 }
 
 void TinySerialOut::println(const char* aStringPtr) {
@@ -659,7 +666,7 @@ void write1Start8Data1StopNoParity(uint8_t aValue) {
 
             // Start of loop
             // if (aValue & 0x01) {
-            "loop:"
+            "txloop:"
             "sbrs %[value] , 0" "\n\t"// 1
             "rjmp .+6" "\n\t"// 2
 
@@ -702,7 +709,7 @@ void write1Start8Data1StopNoParity(uint8_t aValue) {
 
             // }while (i > 0);
             "subi r25 , 0x01" "\n\t"// 1
-            "brne loop" "\n\t"// 1-2
+            "brne txloop" "\n\t"// 1-2
             // To compensate for missing loop cycles at last bit
             "nop" "\n\t"// 1
             "nop" "\n\t"// 1

@@ -152,6 +152,7 @@ public:
     void print(double aFloat, uint8_t aDigits = 2);
 
     void printHex(uint8_t aByte); // with 0x prefix
+    void printlnHex(uint8_t aByte); // with 0x prefix
 
     void println(const char* aStringPtr);
     void println(const __FlashStringHelper * aStringPtr);
