@@ -30,6 +30,23 @@
 //  PCINT4/XTAL2/CLKO/OC1B/ADC2 (D4) PB4  3|    |6  PB1 (D1) MISO/DO/AIN1/OC0B/OC1A/PCINT1
 //                                   GND  4|    |5  PB0 (D0) MOSI/DI/SDA/AIN0/OC0A/!OC1A/AREF/PCINT0
 //                                         +----+
+
+// ATMEL ATTINY167
+//
+//                      +-\/-+
+//    RX  6 (D 0) PA0  1|    |20  PB0 (D  8) 0 OC1AU  TONE  Timer 1 Channel A
+//    TX  7 (D 1) PA1  2|    |19  PB1 (D  9) 1 OC1BU  Internal LED
+//        8 (D 2) PA2  3|    |18  PB2 (D 10) 2 OC1AV  Timer 1 Channel B
+//   INT1 9 (D 3) PA3  4|    |17  PB3 (D 11) 4 OC1BV  connected with 51 Ohm to D- and 3.3 volt Zener.
+//               AVCC  5|    |16  GND
+//               AGND  6|    |15  VCC
+//       10 (D 4) PA4  7|    |14  PB4 (D 12) XTAL1
+//       11 (D 5) PA5  8|    |13  PB5 (D 13) XTAL2
+//       12 (D 6) PA6  9|    |12  PB6 (D 14) 3 INT0  connected with 68 Ohm to D+ (and disconnected 3.3 volt Zener). Is terminated with ~20 kOhm if USB attached :-(
+//        5 (D 7) PA7 10|    |11  PB7 (D 15)
+//                      +----+
+//
+
 #ifndef TINY_SERIAL_OUT_H_
 #define TINY_SERIAL_OUT_H_
 
@@ -51,7 +68,7 @@
  */
 #if defined(__AVR_ATtiny87__) || defined(__AVR_ATtiny167__)
 #ifndef TX_PIN
-#define TX_PIN PA1 // (package pin 2 on Tiny167) - can use one of PA0 to PA7 here
+#define TX_PIN PA1 // (package pin 2 / TXD on Tiny167) - can use one of PA0 to PA7 here
 #endif
 #ifndef TX_PORT
 #define TX_PORT PORTA
@@ -80,6 +97,11 @@
 #endif
 
 /*
+ * Define or comment this out, if you want to use this class as a replacement for standard Serial as the print class
+ * Adds around 800 Bytes of code
+ */
+//#define TINY_SERIAL_INHERIT_FROM_PRINT
+/*
  * Define or comment this out, if you want to save code size and if you can live with 87 micro seconds intervals of disabled interrupts for each sent byte.
  */
 //#define USE_ALWAYS_CLI_SEI_GUARD_FOR_OUTPUT
@@ -106,10 +128,13 @@ inline void writeValue(uint8_t aValue) {
 }
 
 // The same class as for plain arduino
+#if defined(ARDUINO_AVR_DIGISPARK)
 // The digispark library defines (2/2019) F but not __FlashStringHelper
-#if not defined(F) || defined(ARDUINO_AVR_DIGISPARK)
+//# define F(string_literal) ((fstr_t*)PSTR(string_literal))
+#define __FlashStringHelper fstr_t
+#endif
+#if not defined(F)
 class __FlashStringHelper;
-#undef F
 #define F(string_literal) (reinterpret_cast<const __FlashStringHelper *>(PSTR(string_literal)))
 #endif
 
@@ -134,13 +159,29 @@ void writeUnsignedLong(unsigned long aLong);
 void writeFloat(double aFloat);
 void writeFloat(double aFloat, uint8_t aDigits);
 
-class TinySerialOut {
+char nibbleToHex(uint8_t aByte);
+
+#if defined(TINY_SERIAL_INHERIT_FROM_PRINT)
+class TinySerialOut: public Print
+#else
+class TinySerialOut
+#endif
+{
 public:
 
     void begin(long);
     void end();
     void flush(void);
 
+    void printHex(uint8_t aByte); // with 0x prefix
+    void printHex(uint16_t aWord); // with 0x prefix
+    void printlnHex(uint8_t aByte); // with 0x prefix
+    void printlnHex(uint16_t aWord); // with 0x prefix
+
+    // virtual functions of Print class
+    size_t write(uint8_t aByte);
+
+#if !defined(TINY_SERIAL_INHERIT_FROM_PRINT)
     void print(const __FlashStringHelper * aStringPtr);
     void print(const char* aStringPtr);
     void print(char aChar);
@@ -150,9 +191,6 @@ public:
     void print(long aLong, uint8_t aBase = 10);
     void print(unsigned long aLong, uint8_t aBase = 10);
     void print(double aFloat, uint8_t aDigits = 2);
-
-    void printHex(uint8_t aByte); // with 0x prefix
-    void printlnHex(uint8_t aByte); // with 0x prefix
 
     void println(const char* aStringPtr);
     void println(const __FlashStringHelper * aStringPtr);
@@ -165,6 +203,8 @@ public:
     void println(double aFloat, uint8_t aDigits = 2);
 
     void println(void);
+#endif // TINY_SERIAL_INHERIT_FROM_PRINT
+
 };
 
 // #if ... to be compatible with ATTinyCores and AttinyDigisparkCores
@@ -182,3 +222,5 @@ extern TinySerialOut Serial;
 #endif // defined(__AVR_ATtiny25__) || defined(__AVR_ATtiny45__) || defined(__AVR_ATtiny85__) || defined(__AVR_ATtiny87__) || defined(__AVR_ATtiny167__)
 
 #endif /* TINY_SERIAL_OUT_H_ */
+
+#pragma once
