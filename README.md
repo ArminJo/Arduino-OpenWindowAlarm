@@ -1,7 +1,7 @@
 # [OpenWindowAlarm](https://github.com/ArminJo/Arduino-OpenWindowAlarm)
-### Version 1.3.1
+### [Version 1.3.1](https://github.com/ArminJo/ATtinySerialOut/releases)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Build Status](https://travis-ci.org/ArminJo/Arduino-OpenWindowAlarm.svg?branch=master)](https://travis-ci.org/ArminJo/Arduino-OpenWindowAlarm)
+[![Build Status](https://github.com/ArminJo/Arduino-OpenWindowAlarm/workflows/LibraryBuild/badge.svg)](https://github.com/ArminJo/Arduino-OpenWindowAlarm/actions)
 [![Hit Counter](https://hitcounter.pythonanywhere.com/count/tag.svg?url=https%3A%2F%2Fgithub.com%2FArminJo%2FArduino-OpenWindowAlarm)](https://github.com/brentvollebregt/hit-counter)
 
 Place this on a windowsill and you will be alarmed if you leave the window open longer than five minutes.
@@ -14,7 +14,8 @@ Der **Sourcecode** kann von [hier](https://raw.githubusercontent.com/ArminJo/Ard
 Das Programm ist auch als Beispiel der Arduino "ATtinySerialOut" Bibliothek - unter *Datei -> Beispiele -> Beispiele aus eigenen Bibliotheken* verfügbar. Die Bibliothek kann mit *Werkzeuge -> Bibliotheken verwalten...* oder *Strg+Umschalt+I* geladen werden. Dabei "SerialOut" als Suchstring benutzen.
 
 The **sourcecode** can be copied from [here](https://raw.githubusercontent.com/ArminJo/Arduino-OpenWindowAlarm/master/OpenWindowAlarm/OpenWindowAlarm.ino).<br/>
-The application is also available as an example of the Arduino "ATtinySerialOut" library - use *File -> Examples -> Examples from Custom Libraries*. You can load the library with *Tools -> Manage Libraries...* or *Ctrl+Shift+I*. Use "SerialOut" as filter string.
+The application is also available as an example of the [Arduino ATtinySerialOut library](https://github.com/ArminJo/ATtinySerialOut) - use *File -> Examples -> Examples from Custom Libraries*.
+You can load the library with *Tools -> Manage Libraries...* or *Ctrl+Shift+I*. Use "SerialOut" as filter string.
 
 | YouTube video | Instructable |
 |---------|------|
