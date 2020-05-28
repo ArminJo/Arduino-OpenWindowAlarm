@@ -1,5 +1,8 @@
 # [OpenWindowAlarm](https://github.com/ArminJo/Arduino-OpenWindowAlarm)
+Available as "OpenWindowAlarm" example of Arduino library "ATtinySerialOut"
+
 ### [Version 1.3.1](https://github.com/ArminJo/ATtinySerialOut/releases)
+
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Build Status](https://github.com/ArminJo/Arduino-OpenWindowAlarm/workflows/LibraryBuild/badge.svg)](https://github.com/ArminJo/Arduino-OpenWindowAlarm/actions)
 [![Hit Counter](https://hitcounter.pythonanywhere.com/count/tag.svg?url=https%3A%2F%2Fgithub.com%2FArminJo%2FArduino-OpenWindowAlarm)](https://github.com/brentvollebregt/hit-counter)
@@ -37,16 +40,18 @@ If temperature is lower than the "old" temperature value, an **alarm is issued f
 
 ## Programming the Digispark board
 ### Installation of Digispark for the Arduino IDE
-Install the Digispark board for the Arduino IDE as described in http://digistump.com/wiki/digispark/tutorials/connecting
+Install the Digispark board for the Arduino IDE as described in http://digistump.com/wiki/digispark/tutorials/connecting. I recommend to use as Digispark board URL in Arduino *File/Preferences* the new  **https://raw.githubusercontent.com/ArminJo/DigistumpArduino/master/package_digistump_index.json** instead of **http://digistump.com/package_digistump_index.json** and install the latest **Digistump AVR Boards** version.<br/>
 Since we want to save power, the board clock is switched to 1 MHz in our setup() so you can choose **Digispark (1mhz - No USB)**
 as board in the *Tools* menu.
 
 ## Driver installation
-For Windows you must install the **Digispark driver** before you can program the board. Download it [here](https://github.com/digistump/DigistumpArduino/releases/download/1.6.7/Digistump.Drivers.zip), open it and run `InstallDrivers.exe`.
+For Windows you must install the **Digispark driver** before you can program the board.<br/>
+if you have the *Diigistump AVR Boards* already installed, then the driver is located in `%UserProfile%\AppData\Local\Arduino15\packages\digistump\tools\micronucleus\2.0a4`. Just execute the `Install_Digistump_Drivers.bat` file.<br/>
+**Or** download it [here](https://github.com/digistump/DigistumpArduino/releases/download/1.6.7/Digistump.Drivers.zip), open it and run `InstallDrivers.exe`. 
 
 ### German instructions
 Leider muss der Treiber für das Digispark Board manuell installiert werden. Der **Digispark Treiber** kann von [hier](https://github.com/digistump/DigistumpArduino/releases/download/1.6.7/Digistump.Drivers.zip) heruntergeladen werden. Dann die Datei öffnen und `InstallDrivers.exe` ausführen.<br/>
-Wenn die Digispark Boards in der Arduino IDE schon installiert sind, ist der Treiber bereits auf der Platte unter `C:\Users\<Benutzername>\AppData\Local\Arduino15\packages\digistump\tools\micronucleus\2.0a4`. Am einfachsten installiert man ihn, wenn man das Board einsteckt und wenn das unbekannte Gerät im Geräte-Manager auftaucht, *Treiber aktualisieren* auswählt. Dann *Auf dem Computer nach Treibersoftware suchen* wählen, `C:\Users\<username>` wählen und *Weiter* klicken.<br/>
+Wenn die Digispark Boards in der Arduino IDE schon installiert sind, ist der Treiber bereits auf der Platte unter `%UserProfile%\AppData\Local\Arduino15\packages\digistump\tools\micronucleus\2.0a4`. Am einfachsten installiert man ihn, wenn man das Board einsteckt und wenn das unbekannte Gerät im Geräte-Manager auftaucht, *Treiber aktualisieren* auswählt. Dann *Auf dem Computer nach Treibersoftware suchen* wählen, `C:\Users\<username>` wählen und *Weiter* klicken.<br/>
 Bei der Nachfrage *Möchten sie diese Gerätesoftware installieren* auf *installieren* klicken.
 
 Wenn das **Board nicht erkannt** wird (kein Geräusch beim Einstecken) kann es daran liegen, dass die Buchse zu tief ist, dann eine ander Buchse oder ein USB Verlängerungskabel benutzen.
@@ -84,8 +89,7 @@ For the 6 µA scenario, loop current is 500 times and startup time is negligible 
 ## Reset button
 **If you do not want to remove power to reset the alarm**, connect a reset button between PB5 and ground.
 I did this by connecting the unconnected VIN copper surface to PB5 and soldering the reset button directly to the VIN pin hole and the big ground surface of the removed VIN voltage regulator.<br/><br/>
-If you want to **get rid of the 5 seconds wait** for USB connection **after reset**, you can change the micronucleus kernel on the ATtiny85.
-Adapt and run the `Burn_upgrade_micronucleus-t85_no_pullup.cmd` script and then reload the OpenWindowAlarm application again with the Arduino IDE.
+If you want to **get rid of the 5 seconds wait** for USB connection **after reset**, you can [change the micronucleus kernel on the ATtiny85](https://github.com/ArminJo/DigistumpArduino#update-the-bootloader).
 
 ### After power reduction changes and reset button assembly
 | Both patches on front  | Reset connection on back |
@@ -140,7 +144,7 @@ If the temperature on the sill is lower than the temperature where the board was
 * If you enable `DEBUG` by commenting out line 60, you can monitor the serial output with 115200 baud at P2 to see what is happening.
 
 # Revision History
-###Version 1.3.1
+### Version 1.3.1
 - Check for closed window happens only the first 10 minutes of alarm.
 ### Version 1.3.0
 - Changed voltage low detection.
