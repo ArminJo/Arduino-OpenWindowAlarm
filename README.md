@@ -73,7 +73,7 @@ We now have a Digispark board that consumes 6/9.5 mA at 3,7/5 volt. With a batte
 1. **Disabling the power LED** by breaking the copper wire that connects the power LED to the diode with a knife or removing / disabling the 102 resistor saves 2/2.2 mA.
 2. **Removing the VIN voltage regulator** saves 1.5/3.8 mA.<br/>
 The board now needs 2.5/3.5 mA at 3.7/5 volt and the 2000mAh battery will last for 23 days.
-3. **Disconnecting the USB Pullup resistor** (marked 152) from 5 volt (VCC) saves the remaining 2.5/3.5 mA. Disconnect it by breaking the copper wire on the side of the resistor that points to the ATtiny.<br/>
+3. **Disconnecting the USB D- Pullup resistor** (marked 152) from 5 volt (VCC) saves the remaining 2.5/3.5 mA. Disconnect it by breaking the copper wire on the side of the resistor that points to the ATtiny.<br/>
 **This disables the USB interface** and in turn the possibility to program the Digispark board via USB. To **enable it again**, but still save power, **connect the resistor (marked 152) directly to the USB 5 volt** that is easily available at the outer side of the diode.<br/>
 The correct side of the diode can be found by using a continuity tester. One side of this diode is connected to pin 8 of the ATtiny (VCC). The other side is connected to the USB 5 volt.
 
@@ -83,7 +83,7 @@ The software loop needs 2.1 ms and with DEBUG 6.5 ms (plus 3 times 1 ms startup 
 During the loop the power consumption is 100 times more than sleep => Loop adds only **2% to 4%** to total power consumption.<br/>
 If you reprogram the fuses, you can get **6 µA** power consumption.<br/>
 To reprogram the fuses, you need an ISP (which can be build with an [Arduino](https://www.google.de/search?q=arduino+as+isp)) and a connecting adapter.
-For reprogramming you can use the `Burn_avrdude+fuses-t85_entry_on_power_on_no_pullup.cmd` script provided in the repo.<br/>
+For reprogramming you can use the [`Burn_avrdude+fuses-t85_entry_on_power_on_no_pullup.cmd` script](https://github.com/ArminJo/micronucleus-firmware/blob/master/utils/1_Burn_avrdude%2Bfuses-t85_entry_on_power_on_no_pullup.cmd).<br/>
 For the 6 µA scenario, loop current is 500 times and startup time is negligible => loop adds **5% to 12%** to total (lower) power consumption.
 
 ## Reset button
@@ -131,7 +131,7 @@ If the temperature on the sill is lower than the temperature where the board was
 * `OPEN_WINDOW_ALARM_DELAY_MINUTES` (5) minutes after open window detection the **alarm is activated**.<br/>
     The alarm will not start or an activated alarm will stop if the current temperature is greater than the minimum measured temperature (+ 1) i.e. the window has been closed already.
     
-* The **initial alarm** lasts for 10 minutes. After this, it is activated for a period of 10 seconds with a increasing break from 24 seconds up to 5 minutes.
+* The **initial alarm** lasts for 10 minutes. After this, it is activated for a period of 10 seconds with a increasing break time from 24 seconds up to 5 minutes.
 
 * At **power-on** the VCC voltage is measured used to **determine the type of battery**  using `VCC_VOLTAGE_LIPO_DETECTION` (3.6 volt).
 
