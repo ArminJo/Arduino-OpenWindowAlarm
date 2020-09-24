@@ -1,4 +1,4 @@
-# LibraryBuild.yml
+# TestCompile.yml
 # Github workflow script to test compile all examples of an Arduino library repository.
 #
 # Copyright (C) 2020  Armin Joachimsmeyer
@@ -6,7 +6,7 @@
 #
 
 # This is the name of the workflow, visible on GitHub UI.
-name: LibraryBuild
+name: TestCompile
 on: [push, pull_request] # see: https://help.github.com/en/actions/reference/events-that-trigger-workflows#pull-request-event-pull_request
 
 jobs:
