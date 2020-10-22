@@ -4,7 +4,8 @@ Available as "OpenWindowAlarm" example of Arduino library "ATtinySerialOut"
 ### [Version 1.3.1](https://github.com/ArminJo/ATtinySerialOut/releases)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Build Status](https://github.com/ArminJo/Arduino-OpenWindowAlarm/workflows/LibraryBuild/badge.svg)](https://github.com/ArminJo/Arduino-OpenWindowAlarm/actions)
+ [![Commits since latest](https://img.shields.io/github/commits-since/ArminJo/Arduino-OpenWindowAlarm/latest)](https://github.com/ArminJo/Arduino-OpenWindowAlarm/commits/master) 
+[![Build Status](https://github.com/ArminJo/Arduino-OpenWindowAlarm/workflows/TestCompile/badge.svg)](https://github.com/ArminJo/Arduino-OpenWindowAlarm/actions)
 [![Hit Counter](https://hitcounter.pythonanywhere.com/count/tag.svg?url=https%3A%2F%2Fgithub.com%2FArminJo%2FArduino-OpenWindowAlarm)](https://github.com/brentvollebregt/hit-counter)
 
 Place this on a windowsill and you will be alarmed if you leave the window open longer than five minutes.
@@ -69,22 +70,24 @@ If everything works well, the built-in LED of the Digispark will blink 5 times (
 Before power reduction changes
 ![Final power reduction](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/Digispark.jpg)
 
-We now have a Digispark board that consumes 6/9.5 mA at 3,7/5 volt. With a battery of **2000 mAh** it will run for **9 days**. But it is possible to reduce power consumption to **26 µA** in 3 Steps.
+We now have a Digispark board that [consumes 6 mA at 1MHz and 3,7 volt](https://github.com/ArminJo/micronucleus-firmware#measured-digispark-pll-clock-supply-current). With a battery of **2000 mAh** it will run for **14 days**. But it is possible to reduce power consumption to **27 µA** in 3 Steps.
 1. **Disabling the power LED** by breaking the copper wire that connects the power LED to the diode with a knife or removing / disabling the 102 resistor saves 2/2.2 mA.
-2. **Removing the VIN voltage regulator** saves 1.5/3.8 mA.<br/>
-The board now needs 2.5/3.5 mA at 3.7/5 volt and the 2000mAh battery will last for 23 days.
-3. **Disconnecting the USB D- Pullup resistor** (marked 152) from 5 volt (VCC) saves the remaining 2.5/3.5 mA. Disconnect it by breaking the copper wire on the side of the resistor that points to the ATtiny.<br/>
-**This disables the USB interface** and in turn the possibility to program the Digispark board via USB. To **enable it again**, but still save power, **connect the resistor (marked 152) directly to the USB 5 volt** that is easily available at the outer side of the diode.<br/>
-The correct side of the diode can be found by using a continuity tester. One side of this diode is connected to pin 8 of the ATtiny (VCC). The other side is connected to the USB 5 volt.
+2. **Removing the VIN voltage regulator** saves 1.5/3.0 mA.<br/>
+The board now needs 3/4.3 mA at 3.7/5 volt and the 2000mAh battery will last for 28 days.
+3. **Disconnecting the USB D- Pullup resistor** (marked 152) from 5 volt (VCC). Disconnect it by breaking the copper wire on the side of the resistor that points to the ATtiny.<br/>
+**This disables the USB interface** and in turn the possibility to program the Digispark board via USB. To **enable it again**, but still save power, **connect the resistor (marked 152) directly to the USB V+** that is easily available at the outer side of the diode.<br/>
+The correct side of the diode can be found by using a continuity tester. One side of this diode is connected to pin 8 of the ATtiny (VCC) and Digispark 5V. The other side is connected to the USB V+.
 
 Now the USB pullup resistor is only activated if the Digispark board is connected to USB e.g. during programming.<br/>
-The board now consumes **26 µA** during sleep.<br/>
-The software loop needs 2.1 ms and with DEBUG 6.5 ms (plus 3 times 1 ms startup time) => active time is around 1/5000 or 1/2500 of total time.
-During the loop the power consumption is 100 times more than sleep => Loop adds only **2% to 4%** to total power consumption.<br/>
-If you reprogram the fuses, you can get **6 µA** power consumption.<br/>
-To reprogram the fuses, you need an ISP (which can be build with an [Arduino](https://www.google.de/search?q=arduino+as+isp)) and a connecting adapter.
-For reprogramming you can use the [`Burn_avrdude+fuses-t85_entry_on_power_on_no_pullup.cmd` script](https://github.com/ArminJo/micronucleus-firmware/blob/master/utils/1_Burn_avrdude%2Bfuses-t85_entry_on_power_on_no_pullup.cmd).<br/>
-For the 6 µA scenario, loop current is 500 times and startup time is negligible => loop adds **5% to 12%** to total (lower) power consumption.
+The board now consumes **27 µA** during sleep.
+
+The software loop needs 2.1 ms (plus 3 times 64 ms startup time) => active time is around 1/125 of total time.
+During the loop the power consumption is 100 times the sleep current => Loop adds **80%** to total power consumption.<br/>
+We now have an average current consumption of **75 µA** and the 2000mAh battery will last for **3 years**.
+
+The BOD current of 20 µA can only be disabled by setting fuses via ISP programmer](https://www.google.de/search?q=arduino+as+isp) and a connecting adapter. We can also reduce the start-up time from sleep from 64 to to 5 ms.
+For reprogramming the fuses, you can use [this script](https://github.com/ArminJo/micronucleus-firmware/blob/master/utils/Write%2085%20Fuses%20E1%20DF%20FE%20-%20Digispark%20default%20without%20BOD%20and%20Pin5%20and%20fast%20startup.cmd).<br/>
+Without BOD and with fast startup we have an average current consumption of **9 µA** and are still able to program the ATtiny by USB.
 
 ## Reset button
 **If you do not want to remove power to reset the alarm**, connect a reset button between PB5 and ground.
@@ -141,7 +144,7 @@ If the temperature on the sill is lower than the temperature where the board was
 
 * After power-on, the **inactive settling time** is 5 minutes. If the board is getting colder during the settling time, 4:15 (or 8:30) minutes are added to avoid false alarms after power-on.
 
-* If you enable `DEBUG` by commenting out line 60, you can monitor the serial output with 115200 baud at P2 to see what is happening.
+* If you enable `DEBUG` by activating line 62, you can monitor the serial output with 115200 baud at P2 to see what is happening.
 
 # Revision History
 ### Version 1.3.1
