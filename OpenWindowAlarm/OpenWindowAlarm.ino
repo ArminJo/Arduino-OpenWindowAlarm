@@ -176,12 +176,12 @@ uint16_t sVCCMonitoringDelayCounter; // Counter for VCC monitoring.
 #define SHIFT_VALUE_FOR_REFERENCE REFS0
 
 #if (LED_PIN == TX_PIN)
-#error "LED pin must not be equal TX pin."
+#error LED pin must not be equal TX pin.
 #endif
 
 #define LED_PULSE_LENGTH 200 // 500 is well visible, 200 is OK
 #if (LED_PULSE_LENGTH < 150)
-#error "LED_PULSE_LENGTH must at least be 150, since the code after digitalWrite(LED_PIN, 1) needs 150 us."
+#error LED_PULSE_LENGTH must at least be 150, since the code after digitalWrite(LED_PIN, 1) needs 150 us.
 #endif
 
 uint8_t sMCUSRStored; // content of MCUSR register at startup
@@ -197,7 +197,6 @@ void sleepDelay(uint16_t aSecondsToSleep);
 void delayMilliseconds(unsigned int aMillis);
 uint16_t readADCChannelWithReferenceOversample(uint8_t aChannelNumber, uint8_t aReference, uint8_t aOversampleExponent);
 uint16_t getVCCVoltageMillivolt(void);
-void changeDigisparkClock();
 
 #ifdef DEBUG
 void printFuses(void);
@@ -212,7 +211,6 @@ void printBODSFlagExistence();
  ***********************************************************************************/
 
 void setup() {
-
     /*
      * store MCUSR early for later use
      */
@@ -240,8 +238,6 @@ void setup() {
 #ifdef ALARM_TEST
     pinMode(ALARM_TEST_PIN, INPUT_PULLUP);
 #endif
-
-//    changeDigisparkClock();
 
     sBODLevelIsBelow2_7 = (getBODLevelFuses() >= 6);
 
@@ -305,6 +301,7 @@ void setup() {
     /*
      * Blink LED at startup to show OPEN_WINDOW_MINUTES
      */
+    delayMilliseconds(1000); // wait extra second after bootloader blink
     for (int i = 0; i < OPEN_WINDOW_ALARM_DELAY_MINUTES; ++i) {
         // activate LED
         digitalWrite(LED_PIN, 1);
@@ -345,6 +342,7 @@ void setup() {
 
     /*
      * wait 8 seconds, since ATtinys temperature is increased after the micronucleus boot process
+     * We do not disable ADC here, so we consume 212 uA
      */
     sleep_cpu()
     ;
@@ -459,49 +457,6 @@ void loop() {
     digitalWrite(LED_PIN, 0);
 
     sleepDelay(TEMPERATURE_SAMPLE_SECONDS);
-}
-
-/*
- * Code to change Digispark Bootloader clock settings to get the right CPU frequency
- * and to reset Digispark OCCAL tweak.
- * Call it if you want to use the standard ATtiny85 library, BUT do not call it, if you need Digispark USB functions available for 16 MHz.
- */
-void changeDigisparkClock() {
-    uint8_t tLowFuse = boot_lock_fuse_bits_get(GET_LOW_FUSE_BITS);
-    if ((tLowFuse & 0x0F) == 0x01) {
-        /*
-         * Here we have High Frequency PLL Clock (16 or 16.5 MHz)
-         */
-#if (F_CPU == 1000000)
-        // Divide 16 MHz Pll clock by 16 for Digispark Boards to get the requested 1 MHz
-        clock_prescale_set(clock_div_16);
-//        CLKPR = (1 << CLKPCE);  // unlock function
-//        CLKPR = (1 << CLKPS2); // %16
-#endif
-#if (F_CPU == 8000000)
-        // Divide 16 MHz Pll clock by 2 for Digispark Boards to get the requested 8 MHz
-        clock_prescale_set(clock_div_2);
-//        CLKPR = (1 << CLKPCE);  // unlock function
-//        CLKPR = (1 << CLKPS0);// %2
-#endif
-    }
-
-    /*
-     * Code to reset Digispark OCCAL tweak
-     */
-#define  SIGRD  5 // needed for boot_signature_byte_get()
-    uint8_t tStoredOSCCAL = boot_signature_byte_get(1);
-    if (OSCCAL != tStoredOSCCAL) {
-#ifdef DEBUG
-        uint8_t tOSCCAL = OSCCAL;
-        Serial.print(F("Changed OSCCAL from 0x"));
-        Serial.print(tOSCCAL);
-        Serial.print(F(" to 0x"));
-        Serial.println(tStoredOSCCAL);
-#endif
-        // retrieve the factory-stored oscillator calibration bytes to revert the digispark OSCCAL tweak
-        OSCCAL = tStoredOSCCAL;
-    }
 }
 
 /*
@@ -707,7 +662,7 @@ void delayAndSignalOpenWindowDetectionAndLowVCC() {
  * If BOD is enabled by fuses -which is default for Digispark boards- we need additionally 20 uA resulting in 26 uA current.
  */
 void sleepDelay(uint16_t aSecondsToSleep) {
-    ADCSRA = 0; // disable ADC -> saves 150 - 200 uA
+    ADCSRA = 0; // disable ADC -> saves 200 uA
     for (uint16_t i = 0; i < (aSecondsToSleep / 8); ++i) {
         /*
          * Turn off the brown-out detector - but this works only for ATtiny85 revision C, which is hardly seen in the wild :-(.
