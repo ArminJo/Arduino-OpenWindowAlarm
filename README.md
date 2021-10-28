@@ -1,7 +1,7 @@
 # [OpenWindowAlarm](https://github.com/ArminJo/Arduino-OpenWindowAlarm)
 Available as "OpenWindowAlarm" example of Arduino library "ATtinySerialOut"
 
-### [Version 1.3.1](https://github.com/ArminJo/ATtinySerialOut/releases)
+### [Version 1.3.2](https://github.com/ArminJo/ATtinySerialOut/releases)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
  [![Commits since latest](https://img.shields.io/github/commits-since/ArminJo/Arduino-OpenWindowAlarm/latest)](https://github.com/ArminJo/Arduino-OpenWindowAlarm/commits/master) 
@@ -147,6 +147,8 @@ If the temperature on the sill is lower than the temperature where the board was
 * If you enable `DEBUG` by activating line 62, you can monitor the serial output with 115200 baud at P2 to see what is happening.
 
 # Revision History
+### Version 1.3.2
+- Adapted MCUSR handling.
 ### Version 1.3.1
 - Check for closed window happens only the first 10 minutes of alarm.
 ### Version 1.3.0
