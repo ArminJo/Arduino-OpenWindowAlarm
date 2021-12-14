@@ -6,7 +6,7 @@ Available as "OpenWindowAlarm" example of Arduino library "ATtinySerialOut"
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
  [![Commits since latest](https://img.shields.io/github/commits-since/ArminJo/Arduino-OpenWindowAlarm/latest)](https://github.com/ArminJo/Arduino-OpenWindowAlarm/commits/master) 
 [![Build Status](https://github.com/ArminJo/Arduino-OpenWindowAlarm/workflows/TestCompile/badge.svg)](https://github.com/ArminJo/Arduino-OpenWindowAlarm/actions)
-[![Hit Counter](https://hitcounter.pythonanywhere.com/count/tag.svg?url=https%3A%2F%2Fgithub.com%2FArminJo%2FArduino-OpenWindowAlarm)](https://github.com/brentvollebregt/hit-counter)
+![Hit Counter](https://visitor-badge.laobi.icu/badge?page_id=ArminJo_Arduino-OpenWindowAlarm)
 
 Place this on a windowsill and you will be alarmed if you leave the window open longer than five minutes.
 It senses the falling temperature and thus works best in winter. It requires only 0.026 milliampere. This means one battery will last the whole winter.
@@ -15,11 +15,11 @@ It senses the falling temperature and thus works best in winter. It requires onl
 
 ### Sourcecode
 Der **Sourcecode** kann von [hier](https://raw.githubusercontent.com/ArminJo/Arduino-OpenWindowAlarm/master/OpenWindowAlarm/OpenWindowAlarm.ino) kopiert werden.<br/>
-Das Programm ist auch als Beispiel der Arduino "ATtinySerialOut" Bibliothek - unter *Datei -> Beispiele -> Beispiele aus eigenen Bibliotheken* verfügbar. Die Bibliothek kann mit *Werkzeuge -> Bibliotheken verwalten...* oder *Strg+Umschalt+I* geladen werden. Dabei "SerialOut" als Suchstring benutzen.
+Das Programm ist auch als Beispiel der Arduino "ATtinySerialOut" Bibliothek - unter *Datei -> Beispiele -> Beispiele aus eigenen Bibliotheken - ATtinySerialOut -> OpenWindowAlarm* verfügbar. Die Bibliothek kann mit *Werkzeuge -> Bibliotheken verwalten...* oder *Strg+Umschalt+I* geladen werden. Dabei "SerialOut" als Suchstring benutzen.
 
 The **sourcecode** can be copied from [here](https://raw.githubusercontent.com/ArminJo/Arduino-OpenWindowAlarm/master/OpenWindowAlarm/OpenWindowAlarm.ino).<br/>
-The application is also available as an example of the [Arduino ATtinySerialOut library](https://github.com/ArminJo/ATtinySerialOut) - use *File -> Examples -> Examples from Custom Libraries*.
-You can load the library with *Tools -> Manage Libraries...* or *Ctrl+Shift+I*. Use "SerialOut" as filter string.
+The application is also available as an example of the [Arduino ATtinySerialOut library](https://github.com/ArminJo/ATtinySerialOut) - use *File -> Examples -> Examples from Custom Libraries - ATtinySerialOut -> OpenWindowAlarm*.
+You can load the library with *Tools -> Manage Libraries...* or *Ctrl+Shift+I*. Use "SerialOut" as filter string.<br/>
 
 | YouTube video | Instructable |
 |---------|------|
@@ -40,31 +40,31 @@ If temperature is lower than the "old" temperature value, an **alarm is issued f
 | ![AAA battery case](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/BatteryCase.jpg) | ![CR2032 holder](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/CR2032Holder.jpg) | ![LiPo battery](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/LiPo.jpg) |
 
 ## Programming the Digispark board
-### Installation of Digispark for the Arduino IDE
-Install the Digispark board for the Arduino IDE as described in http://digistump.com/wiki/digispark/tutorials/connecting. I recommend to use as Digispark board URL in Arduino *File/Preferences* the new  **https://raw.githubusercontent.com/ArminJo/DigistumpArduino/master/package_digistump_index.json** instead of **http://digistump.com/package_digistump_index.json** and install the latest **Digistump AVR Boards** version.<br/>
-Since we want to save power, the board clock is switched to 1 MHz in our setup() so you can choose **Digispark (1mhz - No USB)**
-as board in the *Tools* menu.
+### Installation of the core for Digispark boards for the Arduino IDE
+Install the Digispark board for the Arduino IDE as described in http://digistump.com/wiki/digispark/tutorials/connecting. Instead of **http://digistump.com/package_digistump_index.json** you must use **http://drazzy.com/package_drazzy.com_index.json** as Digispark board URL in Arduino *File/Preferences*. In the *Boards Manager* install the latest **ATTinyCore** version.<br/>
+Since we want to save power, the board clock is 1 MHz so you must choose **ATTinyCore->ATtiny85 (Micronucleus / DigiSpark)**
+as board in the *Tools* menu and set the clock to **1MHz (no USB)**.
+![Board settings](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/BoardSettings.png)
 
 ## Driver installation
 For Windows you must install the **Digispark driver** before you can program the board.<br/>
-if you have the *Diigistump AVR Boards* already installed, then the driver is located in `%UserProfile%\AppData\Local\Arduino15\packages\digistump\tools\micronucleus\2.0a4`. Just execute the `Install_Digistump_Drivers.bat` file.<br/>
+if you have the *Digistump AVR Boards* already installed, then the driver is located in `%UserProfile%\AppData\Local\Arduino15\packages\ATTinyCore\tools\micronucleus\2.5-azd1b`. Just execute the `Install_Digistump_Drivers.bat` file.<br/>
 **Or** download it [here](https://github.com/digistump/DigistumpArduino/releases/download/1.6.7/Digistump.Drivers.zip), open it and run `InstallDrivers.exe`. 
 
 ### German instructions
 Leider muss der Treiber für das Digispark Board manuell installiert werden. Der **Digispark Treiber** kann von [hier](https://github.com/digistump/DigistumpArduino/releases/download/1.6.7/Digistump.Drivers.zip) heruntergeladen werden. Dann die Datei öffnen und `InstallDrivers.exe` ausführen.<br/>
-Wenn die Digispark Boards in der Arduino IDE schon installiert sind, ist der Treiber bereits auf der Platte unter `%UserProfile%\AppData\Local\Arduino15\packages\digistump\tools\micronucleus\2.0a4`. Am einfachsten installiert man ihn, wenn man das Board einsteckt und wenn das unbekannte Gerät im Geräte-Manager auftaucht, *Treiber aktualisieren* auswählt. Dann *Auf dem Computer nach Treibersoftware suchen* wählen, `C:\Users\<username>` wählen und *Weiter* klicken.<br/>
+Wenn die Digispark Boards in der Arduino IDE schon installiert sind, ist der Treiber bereits auf der Platte unter `%UserProfile%\AppData\Local\Arduino15\packages\ATTinyCore\tools\micronucleus\2.5-azd1b`. Am einfachsten installiert man ihn, wenn man das Board einsteckt und wenn das unbekannte Gerät im Geräte-Manager auftaucht, *Treiber aktualisieren* auswählt. Dann *Auf dem Computer nach Treibersoftware suchen* wählen, `C:\Users\<username>` wählen und *Weiter* klicken.<br/>
 Bei der Nachfrage *Möchten sie diese Gerätesoftware installieren* auf *installieren* klicken.
 
 Wenn das **Board nicht erkannt** wird (kein Geräusch beim Einstecken) kann es daran liegen, dass die Buchse zu tief ist, dann eine ander Buchse oder ein USB Verlängerungskabel benutzen.
 
 ### Compile and upload the program to the board
-In the Arduino IDE create a new sketch with *File -> New* and name it e.g. `OpenWindowAlarm`.
-Copy the code from [OpenWindowAlarm.ino](https://raw.githubusercontent.com/ArminJo/Arduino-OpenWindowAlarm/master/OpenWindowAlarm/OpenWindowAlarm.ino)<br/>
+Install the Arduino library **ATtinySerialOut** and select the OpenWindowsAlarm example with *File -> Examples -> Examples from Custom Libraries -ATtinySerialOut -> OpenWindowAlarm*<br/>
 **OR**<br/>
-Download and extract the repository. Open the sketch with *File -> Open...* and select the `OpenWindowAlarm` folder.
+create a new sketch with *File -> New* and name it `OpenWindowAlarm` in the Arduino IDE and copy the code from [OpenWindowAlarm.ino](https://raw.githubusercontent.com/ArminJo/Arduino-OpenWindowAlarm/master/OpenWindowAlarm/OpenWindowAlarm.ino).
 
-Compile and upload it. Keep in mind, that upload will not work if the speaker is connected.
-If everything works well, the built-in LED of the Digispark will blink 5 times (for the 5 minutes alarm delay) and then start flashing after 8 seconds with an interval of 24 seconds to signal each temperature reading.
+Compile and upload it. Keep in mind, that **upload will not work if the speaker is connected**.<br/>
+If everything works well, the built-in LED of the Board will blink 5 times (for the 5 minutes alarm delay) and then start flashing after 8 seconds with an interval of 24 seconds to signal each temperature reading.
 
 ## Power reduction
 Before power reduction changes
