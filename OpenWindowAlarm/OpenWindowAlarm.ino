@@ -1,6 +1,6 @@
 /*
  * OpenWindowAlarm.cpp
- * This program must run at 1MHz, select Digispark (1mhz – No USB) or equivalent as your board!
+ * This program must run at 1MHz, select Digispark (1mhz ï¿½ No USB) or equivalent as your board!
  *
  * Overview:
  * Every 24 seconds a sample is taken of the ATtiny internal temperature sensor which has a resolution of 1 degree.
@@ -46,8 +46,8 @@
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *  See the GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program. If not, see <http://www.gnu.org/licenses/gpl.html>.
@@ -57,7 +57,7 @@
 #include <Arduino.h>
 
 /*
- * To see serial output, you must select "Digispark (1mhz – No USB)" as Board in the Arduino IDE!
+ * To see serial output, you must select "Digispark (1mhz ï¿½ No USB)" as Board in the Arduino IDE!
  * And you need TinySerialOut.h + TinySerialOut.cpp in your sketch folder.
  */
 //#define DEBUG // To see serial output with 115200 baud at P2 -
@@ -76,8 +76,12 @@
 #include <avr/sleep.h> // required for sleep_enable()
 #include <avr/wdt.h>   // required for WDTO_8S
 
-#define VERSION "1.3.1"
+#define VERSION "1.3.3"
 /*
+ * Version 1.3.3
+ * - 3. party libs.
+ * Version 1.3.2
+ * - Adapted MCUSR handling.
  * Version 1.3.1
  * - Check for closed window happens only the first 10 minutes of alarm.
  * Version 1.3.0

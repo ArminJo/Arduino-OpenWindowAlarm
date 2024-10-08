@@ -8,12 +8,12 @@
  *
  * Using PB2 // (Pin7 on Tiny85) as default TX pin to be compatible with digispark board
  * To change the output pin, add a line "#define TX_PIN ..." before the line #include "TinySerialOut.hpp"
- * or or set it as compiler symbol like "-DTX_PIN PB1".
+ * or or set it as compiler symbol like "-DTX_PIN PIN_PB1".
  *
  * Using the Serial.print commands needs 4 bytes extra for each call.
  *
  *
- *  Copyright (C) 2015-2022  Armin Joachimsmeyer
+ *  Copyright (C) 2015-2024  Armin Joachimsmeyer
  *  Email: armin.joachimsmeyer@gmail.com
  *
  *  This file is part of TinySerialOut https://github.com/ArminJo/ATtinySerialOut.
@@ -25,8 +25,8 @@
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *  See the GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program. If not, see <http://www.gnu.org/licenses/gpl.html>.
@@ -36,7 +36,7 @@
 #ifndef _ATTINY_SERIAL_OUT_HPP
 #define _ATTINY_SERIAL_OUT_HPP
 
-#if defined(__AVR_ATtiny25__) || defined(__AVR_ATtiny45__) || defined(__AVR_ATtiny85__) \
+#if defined(__AVR_ATtiny13__) || defined(__AVR_ATtiny13A__) || defined(__AVR_ATtiny25__) || defined(__AVR_ATtiny45__) || defined(__AVR_ATtiny85__) \
     || defined(__AVR_ATtiny24__) || defined(__AVR_ATtiny44__) || defined(__AVR_ATtiny84__) \
     || defined(__AVR_ATtiny87__) || defined(__AVR_ATtiny167__) \
     || defined(__AVR_ATtiny88__)
@@ -51,44 +51,93 @@
 #define PORTB (*(volatile uint8_t *)((0x18) + 0x20))
 #endif
 
-#if defined(__AVR_ATtiny87__) || defined(__AVR_ATtiny167__)
-#  if !defined(TX_PORT)
-#    if !defined(USE_PORTB_FOR_TX_PIN)
-#define TX_PORT PORTA
-#define TX_PORT_ADDR 0x02 // from #define PORTA _SFR_IO8(0x02)
-#define TX_DDR DDRA
-#    else
-#define TX_PORT PORTB
-#define TX_PORT_ADDR 0x05 // from #define PORTB _SFR_IO8(0x05)
-#define TX_DDR DDRB
-#    endif
+#if defined(__AVR_ATtiny87__) || defined(__AVR_ATtiny167__) // For use with ATTinyCore
+#  if TX_PIN == PIN_PA0 || TX_PIN == PIN_PA1 || TX_PIN == PIN_PA2 || TX_PIN == PIN_PA3 \
+    || TX_PIN == PIN_PA4 || TX_PIN == PIN_PA5 || TX_PIN == PIN_PA6 || TX_PIN == PIN_PA7
+#define TX_PORT         PORTA
+#define TX_PORT_ADDR    0x02 // from #define PORTA _SFR_IO8(0x02)
+#define TX_DDR          DDRA
+#  else
+#define TX_PORT         PORTB
+#define TX_PORT_ADDR    0x05 // from #define PORTB _SFR_IO8(0x05)
+#define TX_DDR          DDRB
 #  endif
 
 #elif defined(__AVR_ATtiny88__)
 //  MH-ET LIVE Tiny88(16.0MHz) board
-#define TX_PORT PORTD
-#define TX_PORT_ADDR 0x0B // PORTD
-#define TX_DDR DDRD
+#  if TX_PIN <= 7
+#define TX_PORT         PORTD
+#define TX_PORT_ADDR    0x0B // from #define PORTD _SFR_IO8(0x0B)
+#define TX_DDR          DDRD
+#  elif TX_PIN <= 15
+#define TX_PORT         PORTB
+#define TX_PORT_ADDR    0x05
+#define TX_DDR          DDRB
+#  elif TX_PIN <= 22
+#define TX_PORT         PORTC
+#define TX_PORT_ADDR    0x08
+#define TX_DDR          DDRC
+#  elif TX_PIN <= 26
+#define TX_PORT         PORTA
+#define TX_PORT_ADDR    0x0E
+#define TX_DDR          DDRA
+#  else
+#define TX_PORT         PORTC
+#define TX_PORT_ADDR    0x08
+#define TX_DDR          DDRC
+#  endif
+
+#elif defined(__AVR_ATtiny84__) // For use with ATTinyCore
+#  if TX_PIN == PIN_PA0 || TX_PIN == PIN_PA1 || TX_PIN == PIN_PA2 || TX_PIN == PIN_PA3 \
+    || TX_PIN == PIN_PA4 || TX_PIN == PIN_PA5 || TX_PIN == PIN_PA6 || TX_PIN == PIN_PA7
+#define TX_PORT         PORTA
+#define TX_PORT_ADDR    0x1B
+#define TX_DDR          DDRA
+#  else
+#define TX_PORT         PORTB
+#define TX_PORT_ADDR    0x18
+#define TX_DDR          DDRB
+#  endif
 
 #else
 //  ATtinyX5 here
-#define TX_PORT PORTB
-#define TX_PORT_ADDR 0x18 // PORTB
-#define TX_DDR DDRB
+#define TX_PORT         PORTB
+#define TX_PORT_ADDR    0x18 // PORTB
+#define TX_DDR          DDRB
 #endif // defined(__AVR_ATtiny87__) || defined(__AVR_ATtiny167__)
+
+#if defined(digitalPinToPCMSKbit)
+#define TX_BIT_NUMBER   digitalPinToPCMSKbit(TX_PIN)
+#else
+#define TX_BIT_NUMBER   TX_PIN
+#endif
 
 void write1Start8Data1StopNoParity(uint8_t aValue);
 
 bool sUseCliSeiForWrite = true;
 
 /*
+ * The Serial Instance!!!
+ */
+// #if ... to be compatible with ATTinyCores and AttinyDigisparkCores
+#if (!defined(UBRRH) && !defined(UBRR0H)) /*AttinyDigisparkCore and AttinyDigisparkCore condition*/ \
+    || USE_SOFTWARE_SERIAL /*AttinyDigisparkCore condition*/\
+    || ((defined(UBRRH) || defined(UBRR0H) || defined(UBRR1H) || defined(LINBRRH)) && !USE_SOFTWARE_SERIAL)/*AttinyDigisparkCore condition for HardwareSerial*/
+// Switch to SerialOut since Serial is already defined
+// or activate line 745 in TinyDebugSerial.h included in AttinyDigisparkCores/src/tiny/WProgram.h at line 24 for AttinyDigisparkCores
+TinySerialOut SerialOut;
+#else
+TinySerialOut Serial;
+#endif
+
+/*
  * Must be called once if pin is not set to output otherwise
  */
 void initTXPin() {
     // TX_PIN is active LOW, so set it to HIGH initially
-    TX_PORT |= (1 << TX_PIN);
+    TX_PORT |= (1 << TX_BIT_NUMBER);
     // set pin direction to output
-    TX_DDR |= (1 << TX_PIN);
+    TX_DDR |= (1 << TX_BIT_NUMBER);
 }
 
 void write1Start8Data1StopNoParityWithCliSei(uint8_t aValue) {
@@ -132,7 +181,7 @@ void writeString(const char *aStringPtr) {
  * Write string residing in program memory (FLASH)
  */
 void writeString_P(const char *aStringPtr) {
-    uint8_t tChar = pgm_read_byte((const uint8_t * ) aStringPtr);
+    uint8_t tChar = pgm_read_byte((const uint8_t* ) aStringPtr);
 // Comparing with 0xFF is safety net for wrong string pointer
     while (tChar != 0 && tChar != 0xFF) {
 #if defined(USE_ALWAYS_CLI_SEI_GUARD_FOR_OUTPUT)
@@ -144,7 +193,7 @@ void writeString_P(const char *aStringPtr) {
             write1Start8Data1StopNoParity(tChar);
         }
 #endif
-        tChar = pgm_read_byte((const uint8_t * ) ++aStringPtr);
+        tChar = pgm_read_byte((const uint8_t* ) ++aStringPtr);
     }
 }
 
@@ -153,7 +202,7 @@ void writeString_P(const char *aStringPtr) {
  */
 void writeString(const __FlashStringHelper *aStringPtr) {
     PGM_P tPGMStringPtr = reinterpret_cast<PGM_P>(aStringPtr);
-    uint8_t tChar = pgm_read_byte((const uint8_t * ) aStringPtr);
+    uint8_t tChar = pgm_read_byte((const uint8_t* ) aStringPtr);
 // Comparing with 0xFF is safety net for wrong string pointer
     while (tChar != 0 && tChar != 0xFF) {
 #if defined(USE_ALWAYS_CLI_SEI_GUARD_FOR_OUTPUT)
@@ -165,7 +214,7 @@ void writeString(const __FlashStringHelper *aStringPtr) {
             write1Start8Data1StopNoParity(tChar);
         }
 #endif
-        tChar = pgm_read_byte((const uint8_t * ) ++tPGMStringPtr);
+        tChar = pgm_read_byte((const uint8_t* ) ++tPGMStringPtr);
     }
 }
 
@@ -173,7 +222,7 @@ void writeString(const __FlashStringHelper *aStringPtr) {
  * Write string residing in EEPROM space
  */
 void writeString_E(const char *aStringPtr) {
-    uint8_t tChar = eeprom_read_byte((const uint8_t *) aStringPtr);
+    uint8_t tChar = eeprom_read_byte((const uint8_t*) aStringPtr);
     // Comparing with 0xFF is safety net for wrong string pointer
     while (tChar != 0 && tChar != 0xFF) {
 #if defined(USE_ALWAYS_CLI_SEI_GUARD_FOR_OUTPUT)
@@ -185,7 +234,7 @@ void writeString_E(const char *aStringPtr) {
             write1Start8Data1StopNoParity(tChar);
         }
 #endif
-        tChar = eeprom_read_byte((const uint8_t *) ++aStringPtr);
+        tChar = eeprom_read_byte((const uint8_t*) ++aStringPtr);
     }
 }
 
@@ -494,20 +543,6 @@ void TinySerialOut::println() {
 }
 #endif // !defined(TINY_SERIAL_INHERIT_FROM_PRINT)
 
-/*
- * The Serial Instance!!!
- */
-// #if ... to be compatible with ATTinyCores and AttinyDigisparkCores
-#if (!defined(UBRRH) && !defined(UBRR0H)) /*AttinyDigisparkCore and AttinyDigisparkCore condition*/ \
-    || USE_SOFTWARE_SERIAL /*AttinyDigisparkCore condition*/\
-    || ((defined(UBRRH) || defined(UBRR0H) || defined(UBRR1H) || defined(LINBRRH)) && !USE_SOFTWARE_SERIAL)/*AttinyDigisparkCore condition for HardwareSerial*/
-// Switch to SerialOut since Serial is already defined
-// or activate line 745 in TinyDebugSerial.h included in AttinyDigisparkCores/src/tiny/WProgram.h at line 24 for AttinyDigisparkCores
-TinySerialOut SerialOut;
-#else
-TinySerialOut Serial;
-#endif
-
 /********************************
  * Basic serial output function
  *******************************/
@@ -531,7 +566,7 @@ inline void delay4CyclesExact(uint16_t a4Microseconds) {
     );
 }
 
-#if (F_CPU == 1000000) && defined(_USE_115200BAUD) //else smaller code, but only 38400 baud at 1 MHz
+#if (F_CPU == 1000000) && defined(_USE_115200BAUD) // else around 120 bytes smaller code, but only 38400 baud at 1 MHz
 /*
  * 115200 baud - 8,680 cycles per bit, 86,8 per byte at 1 MHz
  *
@@ -681,7 +716,7 @@ void write1Start8Data1StopNoParity(uint8_t aValue) {
             :
             [value] "r" ( aValue ),
             [txport] "I" ( TX_PORT_ADDR ),
-            [txpin] "I" ( TX_PIN )
+            [txpin] "I" ( TX_BIT_NUMBER )
     );
 }
 #else
@@ -708,7 +743,7 @@ void write1Start8Data1StopNoParity(uint8_t aValue) {
 void write1Start8Data1StopNoParity(uint8_t aValue) {
     asm volatile
     (
-            "cbi  %[txport] , %[txpin]" "\n\t" // 2    PORTB &= ~(1 << TX_PIN);
+            "cbi  %[txport] , %[txpin]" "\n\t" // 2    PORTB &= ~(1 << TX_BIT_NUMBER);
 #if (F_CPU == 1000000) && !defined(_USE_115200BAUD) // 1 MHz 38400 baud
             // 0 cycles padding to get additional 4 cycles
             //delay4CyclesExact(5); -> 20 cycles
@@ -743,10 +778,10 @@ void write1Start8Data1StopNoParity(uint8_t aValue) {
             "rjmp .+6" "\n\t"// 2
 
             "nop" "\n\t"// 1
-            "sbi %[txport] , %[txpin]" "\n\t"// 2    PORTB |= 1 << TX_PIN;
+            "sbi %[txport] , %[txpin]" "\n\t"// 2    PORTB |= 1 << TX_BIT_NUMBER;
             "rjmp .+6" "\n\t"// 2
 
-            "cbi %[txport] , %[txpin]" "\n\t"// 2    PORTB &= ~(1 << TX_PIN);
+            "cbi %[txport] , %[txpin]" "\n\t"// 2    PORTB &= ~(1 << TX_BIT_NUMBER);
             "nop" "\n\t"// 1
             "nop" "\n\t"// 1
             "lsr %[value]" "\n\t"// 1    aValue = aValue >> 1;
@@ -789,7 +824,7 @@ void write1Start8Data1StopNoParity(uint8_t aValue) {
             "nop" "\n\t"// 1
 
             // Stop bit
-            "sbi %[txport] , %[txpin]" "\n\t"// 2    PORTB |= 1 << TX_PIN;
+            "sbi %[txport] , %[txpin]" "\n\t"// 2    PORTB |= 1 << TX_BIT_NUMBER;
 
 #if (F_CPU == 1000000) && !defined(_USE_115200BAUD) // 1 MHz 38400 baud
             // delay4CyclesExact(4); -> 17 cycles - gives minimum 25 cycles for stop bit
@@ -814,7 +849,7 @@ void write1Start8Data1StopNoParity(uint8_t aValue) {
             :
             [value] "r" ( aValue ),
             [txport] "I" ( TX_PORT_ADDR ) , /* 0x18 is PORTB on Attiny 85 */
-            [txpin] "I" ( TX_PIN )
+            [txpin] "I" ( TX_BIT_NUMBER )
             :
             "r25",
             "r30",
@@ -836,7 +871,7 @@ void write1Start8Data1StopNoParity_C_Version(uint8_t aValue) {
      * C Version here for 38400 baud at 1 MHz Clock. You see, it is simple :-)
      */
 // start bit
-    TX_PORT &= ~(1 << TX_PIN);
+    TX_PORT &= ~(1 << TX_BIT_NUMBER);
     _NOP();
     delay4CyclesExact(4);
 
@@ -847,10 +882,10 @@ void write1Start8Data1StopNoParity_C_Version(uint8_t aValue) {
             // bit=1
             // to compensate for jump at data=0
             _NOP();
-            TX_PORT |= 1 << TX_PIN;
+            TX_PORT |= 1 << TX_BIT_NUMBER;
         } else {
             // bit=0
-            TX_PORT &= ~(1 << TX_PIN);
+            TX_PORT &= ~(1 << TX_BIT_NUMBER);
             // compensate for different cycles of sbrs
             _NOP();
             _NOP();
@@ -871,7 +906,7 @@ void write1Start8Data1StopNoParity_C_Version(uint8_t aValue) {
     _NOP();
 
 // Stop bit
-    TX_PORT |= 1 << TX_PIN;
+    TX_PORT |= 1 << TX_BIT_NUMBER;
 // -8 cycles to compensate for fastest repeated call (1 ret + 1 load + 1 call)
     delay4CyclesExact(4); // gives minimum 25 cycles for stop bit :-)
 }

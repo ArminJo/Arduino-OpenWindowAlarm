@@ -1,21 +1,37 @@
+<div align = center>
+
 # [OpenWindowAlarm](https://github.com/ArminJo/Arduino-OpenWindowAlarm)
+Place this gadget on a windowsill and you will be alarmed if you leave the window open longer than five minutes.
+It senses the falling temperature and thus works best in winter. It requires only 0.026 milliampere. This means one battery will last the whole winter.
+
+[![Badge License: GPLv3](https://img.shields.io/badge/License-GPLv3-brightgreen.svg)](https://www.gnu.org/licenses/gpl-3.0)
+ &nbsp; &nbsp;
+[![Badge Version](https://img.shields.io/github/v/release/ArminJo/Arduino-OpenWindowAlarm?include_prereleases&color=yellow&logo=DocuSign&logoColor=white)](https://github.com/ArminJo/Arduino-OpenWindowAlarm/releases/latest)
+ &nbsp; &nbsp;
+[![Badge Commits since latest](https://img.shields.io/github/commits-since/ArminJo/Arduino-OpenWindowAlarm/latest?color=yellow)](https://github.com/ArminJo/Arduino-OpenWindowAlarm/commits/master)
+ &nbsp; &nbsp;
+[![Badge Build Status](https://github.com/ArminJo/Arduino-OpenWindowAlarm/workflows/TestCompile/badge.svg)](https://github.com/ArminJo/Arduino-OpenWindowAlarm/actions)
+ &nbsp; &nbsp;
+![Badge Hit Counter](https://visitor-badge.laobi.icu/badge?page_id=ArminJo_Arduino-OpenWindowAlarm)
+<br/>
+<br/>
+[![Stand With Ukraine](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/badges/StandWithUkraine.svg)](https://stand-with-ukraine.pp.ua)
+
+</div>
+
 Available as "OpenWindowAlarm" example of Arduino library "ATtinySerialOut"
 
-### [Version 1.3.2](https://github.com/ArminJo/ATtinySerialOut/releases)
+#### If you find this library useful, please give it a star.
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
- [![Commits since latest](https://img.shields.io/github/commits-since/ArminJo/Arduino-OpenWindowAlarm/latest)](https://github.com/ArminJo/Arduino-OpenWindowAlarm/commits/master) 
-[![Build Status](https://github.com/ArminJo/Arduino-OpenWindowAlarm/workflows/TestCompile/badge.svg)](https://github.com/ArminJo/Arduino-OpenWindowAlarm/actions)
-![Hit Counter](https://visitor-badge.laobi.icu/badge?page_id=ArminJo_Arduino-OpenWindowAlarm)
+&#x1F30E; [Google Translate](https://translate.google.com/translate?sl=en&u=https://github.com/ArminJo/Arduino-OpenWindowAlarm)
 
-Place this on a windowsill and you will be alarmed if you leave the window open longer than five minutes.
-It senses the falling temperature and thus works best in winter. It requires only 0.026 milliampere. This means one battery will last the whole winter.
+<br/>
 
 ### [Driver installation ->](https://github.com/ArminJo/Arduino-OpenWindowAlarm#driver-installation)
 
 ### Sourcecode
 Der **Sourcecode** kann von [hier](https://raw.githubusercontent.com/ArminJo/Arduino-OpenWindowAlarm/master/OpenWindowAlarm/OpenWindowAlarm.ino) kopiert werden.<br/>
-Das Programm ist auch als Beispiel der Arduino "ATtinySerialOut" Bibliothek - unter *Datei -> Beispiele -> Beispiele aus eigenen Bibliotheken - ATtinySerialOut -> OpenWindowAlarm* verfügbar. Die Bibliothek kann mit *Werkzeuge -> Bibliotheken verwalten...* oder *Strg+Umschalt+I* geladen werden. Dabei "SerialOut" als Suchstring benutzen.
+Das Programm ist auch als Beispiel der Arduino "ATtinySerialOut" Bibliothek - unter *Datei -> Beispiele -> Beispiele aus eigenen Bibliotheken - ATtinySerialOut -> OpenWindowAlarm* verfï¿½gbar. Die Bibliothek kann mit *Werkzeuge -> Bibliotheken verwalten...* oder *Strg+Umschalt+I* geladen werden. Dabei "SerialOut" als Suchstring benutzen.
 
 The **sourcecode** can be copied from [here](https://raw.githubusercontent.com/ArminJo/Arduino-OpenWindowAlarm/master/OpenWindowAlarm/OpenWindowAlarm.ino).<br/>
 The application is also available as an example of the [Arduino ATtinySerialOut library](https://github.com/ArminJo/ATtinySerialOut) - use *File -> Examples -> Examples from Custom Libraries - ATtinySerialOut -> OpenWindowAlarm*.
@@ -52,11 +68,11 @@ if you have the *Digistump AVR Boards* already installed, then the driver is loc
 **Or** download it [here](https://github.com/digistump/DigistumpArduino/releases/download/1.6.7/Digistump.Drivers.zip), open it and run `InstallDrivers.exe`. 
 
 ### German instructions
-Leider muss der Treiber für das Digispark Board manuell installiert werden. Der **Digispark Treiber** kann von [hier](https://github.com/digistump/DigistumpArduino/releases/download/1.6.7/Digistump.Drivers.zip) heruntergeladen werden. Dann die Datei öffnen und `InstallDrivers.exe` ausführen.<br/>
-Wenn die Digispark Boards in der Arduino IDE schon installiert sind, ist der Treiber bereits auf der Platte unter `%UserProfile%\AppData\Local\Arduino15\packages\ATTinyCore\tools\micronucleus\2.5-azd1b`. Am einfachsten installiert man ihn, wenn man das Board einsteckt und wenn das unbekannte Gerät im Geräte-Manager auftaucht, *Treiber aktualisieren* auswählt. Dann *Auf dem Computer nach Treibersoftware suchen* wählen, `C:\Users\<username>` wählen und *Weiter* klicken.<br/>
-Bei der Nachfrage *Möchten sie diese Gerätesoftware installieren* auf *installieren* klicken.
+Leider muss der Treiber fï¿½r das Digispark Board manuell installiert werden. Der **Digispark Treiber** kann von [hier](https://github.com/digistump/DigistumpArduino/releases/download/1.6.7/Digistump.Drivers.zip) heruntergeladen werden. Dann die Datei ï¿½ffnen und `InstallDrivers.exe` ausfï¿½hren.<br/>
+Wenn die Digispark Boards in der Arduino IDE schon installiert sind, ist der Treiber bereits auf der Platte unter `%UserProfile%\AppData\Local\Arduino15\packages\ATTinyCore\tools\micronucleus\2.5-azd1b`. Am einfachsten installiert man ihn, wenn man das Board einsteckt und wenn das unbekannte Gerï¿½t im Gerï¿½te-Manager auftaucht, *Treiber aktualisieren* auswï¿½hlt. Dann *Auf dem Computer nach Treibersoftware suchen* wï¿½hlen, `C:\Users\<username>` wï¿½hlen und *Weiter* klicken.<br/>
+Bei der Nachfrage *Mï¿½chten sie diese Gerï¿½tesoftware installieren* auf *installieren* klicken.
 
-Wenn das **Board nicht erkannt** wird (kein Geräusch beim Einstecken) kann es daran liegen, dass die Buchse zu tief ist, dann eine ander Buchse oder ein USB Verlängerungskabel benutzen.
+Wenn das **Board nicht erkannt** wird (kein Gerï¿½usch beim Einstecken) kann es daran liegen, dass die Buchse zu tief ist, dann eine ander Buchse oder ein USB Verlï¿½ngerungskabel benutzen.
 
 ### Compile and upload the program to the board
 Install the Arduino library **ATtinySerialOut** and select the OpenWindowsAlarm example with *File -> Examples -> Examples from Custom Libraries -ATtinySerialOut -> OpenWindowAlarm*<br/>
@@ -70,7 +86,7 @@ If everything works well, the built-in LED of the Board will blink 5 times (for 
 Before power reduction changes
 ![Final power reduction](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/Digispark.jpg)
 
-We now have a Digispark board that [consumes 6 mA at 1MHz and 3,7 volt](https://github.com/ArminJo/micronucleus-firmware#measured-digispark-pll-clock-supply-current). With a battery of **2000 mAh** it will run for **14 days**. But it is possible to reduce power consumption to **27 µA** in 3 Steps.
+We now have a Digispark board that [consumes 6 mA at 1MHz and 3,7 volt](https://github.com/ArminJo/micronucleus-firmware#measured-digispark-pll-clock-supply-current). With a battery of **2000 mAh** it will run for **14 days**. But it is possible to reduce power consumption to **27 ï¿½A** in 3 Steps.
 1. **Disabling the power LED** by breaking the copper wire that connects the power LED to the diode with a knife or removing / disabling the 102 resistor saves 2/2.2 mA.
 2. **Removing the VIN voltage regulator** saves 1.5/3.0 mA.<br/>
 The board now needs 3/4.3 mA at 3.7/5 volt and the 2000mAh battery will last for 28 days.
@@ -79,15 +95,15 @@ The board now needs 3/4.3 mA at 3.7/5 volt and the 2000mAh battery will last for
 The correct side of the diode can be found by using a continuity tester. One side of this diode is connected to pin 8 of the ATtiny (VCC) and Digispark 5V. The other side is connected to the USB V+.
 
 Now the USB pullup resistor is only activated if the Digispark board is connected to USB e.g. during programming.<br/>
-The board now consumes **27 µA** during sleep.
+The board now consumes **27 ï¿½A** during sleep.
 
 The software loop needs 2.1 ms (plus 3 times 64 ms startup time) => active time is around 1/125 of total time.
 During the loop the power consumption is 100 times the sleep current => Loop adds **80%** to total power consumption.<br/>
-We now have an average current consumption of **75 µA** and the 2000mAh battery will last for **3 years**.
+We now have an average current consumption of **75 ï¿½A** and the 2000mAh battery will last for **3 years**.
 
-The BOD current of 20 µA can only be disabled by setting fuses via ISP programmer](https://www.google.de/search?q=arduino+as+isp) and a connecting adapter. We can also reduce the start-up time from sleep from 64 to to 5 ms.
+The BOD current of 20 ï¿½A can only be disabled by setting fuses via ISP programmer](https://www.google.de/search?q=arduino+as+isp) and a connecting adapter. We can also reduce the start-up time from sleep from 64 to to 5 ms.
 For reprogramming the fuses, you can use [this script](https://github.com/ArminJo/micronucleus-firmware/blob/master/utils/Write%2085%20Fuses%20E1%20DF%20FE%20-%20Digispark%20default%20without%20BOD%20and%20Pin5%20and%20fast%20startup.cmd).<br/>
-Without BOD and with fast startup we have an average current consumption of **9 µA** and are still able to program the ATtiny by USB.
+Without BOD and with fast startup we have an average current consumption of **9 ï¿½A** and are still able to program the ATtiny by USB.
 
 ## Reset button
 **If you do not want to remove power to reset the alarm**, connect a reset button between PB5 and ground.
@@ -112,7 +128,7 @@ If you want to **get rid of the 5 seconds wait** for USB connection **after rese
 |---|---|
 | ![OpenWindowAlarm circuit with AAA batteries](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/Final-VersionAAA.jpg)<br/>Powered by 2 AAA batteries | ![OpenWindowAlarm circuit by CR2032](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/CR2032Front.jpg)<br/>Powered by CR2032 coin cell |
 | ![OpenWindowAlarm circuit with LiPo battery](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/Final-VersionLiPo.jpg)<br/>Powered by LiPo battery | ![OpenWindowAlarm circuit by CR2032](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/CR2032Back.jpg)<br/>Back viev with CR2032 coin cell |
-| ![OpenWindowAlarm circuit with buzzer](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/OpenWindowAlarm2AAA.jpg)<br/>With 16 Ohm buzzer from an old Pc | ![OpenWindowAlarm circuit compact version](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/Final-Version-Compact.jpg)<br/>Compact version |
+| ![OpenWindowAlarm circuit with buzzer](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/OpenWindowAlarm2AAA.jpg)<br/>With 16 &ohm; buzzer from an old Pc | ![OpenWindowAlarm circuit compact version](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/Final-Version-Compact.jpg)<br/>Compact version |
 
 Different reset buttons and connectors
 ![OpenWindowAlarm circuit by CR2032](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/4Modules.jpg)
@@ -147,6 +163,8 @@ If the temperature on the sill is lower than the temperature where the board was
 * If you enable `DEBUG` by activating line 62, you can monitor the serial output with 115200 baud at P2 to see what is happening.
 
 # Revision History
+### Version 1.3.3
+- 3. party libs.
 ### Version 1.3.2
 - Adapted MCUSR handling.
 ### Version 1.3.1
