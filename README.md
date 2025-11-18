@@ -31,7 +31,7 @@ Available as "OpenWindowAlarm" example of Arduino library "ATtinySerialOut"
 
 ### Sourcecode
 Der **Sourcecode** kann von [hier](https://raw.githubusercontent.com/ArminJo/Arduino-OpenWindowAlarm/master/OpenWindowAlarm/OpenWindowAlarm.ino) kopiert werden.<br/>
-Das Programm ist auch als Beispiel der Arduino "ATtinySerialOut" Bibliothek - unter *Datei -> Beispiele -> Beispiele aus eigenen Bibliotheken - ATtinySerialOut -> OpenWindowAlarm* verf�gbar. Die Bibliothek kann mit *Werkzeuge -> Bibliotheken verwalten...* oder *Strg+Umschalt+I* geladen werden. Dabei "SerialOut" als Suchstring benutzen.
+Das Programm ist auch als Beispiel der Arduino "ATtinySerialOut" Bibliothek - unter *Datei -> Beispiele -> Beispiele aus eigenen Bibliotheken - ATtinySerialOut -> OpenWindowAlarm* verfügbar. Die Bibliothek kann mit *Werkzeuge -> Bibliotheken verwalten...* oder *Strg+Umschalt+I* geladen werden. Dabei "SerialOut" als Suchstring benutzen.
 
 The **sourcecode** can be copied from [here](https://raw.githubusercontent.com/ArminJo/Arduino-OpenWindowAlarm/master/OpenWindowAlarm/OpenWindowAlarm.ino).<br/>
 The application is also available as an example of the [Arduino ATtinySerialOut library](https://github.com/ArminJo/ATtinySerialOut) - use *File -> Examples -> Examples from Custom Libraries - ATtinySerialOut -> OpenWindowAlarm*.
@@ -42,10 +42,14 @@ You can load the library with *Tools -> Manage Libraries...* or *Ctrl+Shift+I*. 
 | [![YouTube video](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/OpenWindowAlarm1.jpg)](https://youtu.be/6l_QOM59nyc)<br/> OpenWindowAlarm on a windowsill | [![Instructable](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/instructables-logo-v2.png)](https://www.instructables.com/id/Arduino-Open-Window-Detector-for-Winter/) |
 
 # Functional overview
-Every 24 seconds a reading is taken of the ATtiny internal temperature sensor which has a resolution of 1 degree.
-If temperature is lower than the "old" temperature value, an **alarm is issued five minutes later** if by then the condition still holds true.<br/>
-**Detection of an open window** is indicated by a longer 20 ms blink and a short click every 24 seconds.
-**Low battery** is indicated by beeping and flashing the LED every 24 seconds. The beep and the flash are longer than for an open window detection.
+Every 24 seconds a reading is taken of the ATtiny internal temperature sensor which has a resolution of 1 degree and a short flash is emmited.
+If the temperature is lower than the "old" temperature value, an **alarm will sound five minutes later** if the condition still holds true by then.<br/>
+**Detection of an open window** is indicated by a longer 20 ms flash and a short click every 8 seconds.
+**Low battery** is indicated by the LED flashing and the device beeping every 24 seconds. 
+These beeps and flashes are longer than those for open window detection.
+
+At **startup**, the wait time between window open detection and activation of alarm in minutes (`OPEN_WINDOW_ALARM_DELAY_MINUTES`) is indicated by the number of flashes.
+E.g. 5 flashes indicate 5 minutes between first detection of open window and the alarm.
 
 # How to make your own
 ### The parts you need:
@@ -68,11 +72,11 @@ if you have the *Digistump AVR Boards* already installed, then the driver is loc
 **Or** download it [here](https://github.com/digistump/DigistumpArduino/releases/download/1.6.7/Digistump.Drivers.zip), open it and run `InstallDrivers.exe`. 
 
 ### German instructions
-Leider muss der Treiber f�r das Digispark Board manuell installiert werden. Der **Digispark Treiber** kann von [hier](https://github.com/digistump/DigistumpArduino/releases/download/1.6.7/Digistump.Drivers.zip) heruntergeladen werden. Dann die Datei �ffnen und `InstallDrivers.exe` ausf�hren.<br/>
-Wenn die Digispark Boards in der Arduino IDE schon installiert sind, ist der Treiber bereits auf der Platte unter `%UserProfile%\AppData\Local\Arduino15\packages\ATTinyCore\tools\micronucleus\2.5-azd1b`. Am einfachsten installiert man ihn, wenn man das Board einsteckt und wenn das unbekannte Ger�t im Ger�te-Manager auftaucht, *Treiber aktualisieren* ausw�hlt. Dann *Auf dem Computer nach Treibersoftware suchen* w�hlen, `C:\Users\<username>` w�hlen und *Weiter* klicken.<br/>
-Bei der Nachfrage *M�chten sie diese Ger�tesoftware installieren* auf *installieren* klicken.
+Leider muss der Treiber für das Digispark Board manuell installiert werden. Der **Digispark Treiber** kann von [hier](https://github.com/digistump/DigistumpArduino/releases/download/1.6.7/Digistump.Drivers.zip) heruntergeladen werden. Dann die Datei öffnen und `InstallDrivers.exe` ausführen.<br/>
+Wenn die Digispark Boards in der Arduino IDE schon installiert sind, ist der Treiber bereits auf der Platte unter `%UserProfile%\AppData\Local\Arduino15\packages\ATTinyCore\tools\micronucleus\2.5-azd1b`. Am einfachsten installiert man ihn, wenn man das Board einsteckt und wenn das unbekannte Gerät im Geräte-Manager auftaucht, *Treiber aktualisieren* auswählt. Dann *Auf dem Computer nach Treibersoftware suchen* wählen, `C:\Users\<username>` wählen und *Weiter* klicken.<br/>
+Bei der Nachfrage *Möchten sie diese Gerätesoftware installieren* auf *installieren* klicken.
 
-Wenn das **Board nicht erkannt** wird (kein Ger�usch beim Einstecken) kann es daran liegen, dass die Buchse zu tief ist, dann eine ander Buchse oder ein USB Verl�ngerungskabel benutzen.
+Wenn das **Board nicht erkannt** wird (kein Geräusch beim Einstecken) kann es daran liegen, dass die Buchse zu tief ist, dann eine ander Buchse oder ein USB Verlängerungskabel benutzen.
 
 ### Compile and upload the program to the board
 Install the Arduino library **ATtinySerialOut** and select the OpenWindowsAlarm example with *File -> Examples -> Examples from Custom Libraries -ATtinySerialOut -> OpenWindowAlarm*<br/>
@@ -80,13 +84,13 @@ Install the Arduino library **ATtinySerialOut** and select the OpenWindowsAlarm 
 create a new sketch with *File -> New* and name it `OpenWindowAlarm` in the Arduino IDE and copy the code from [OpenWindowAlarm.ino](https://raw.githubusercontent.com/ArminJo/Arduino-OpenWindowAlarm/master/OpenWindowAlarm/OpenWindowAlarm.ino).
 
 Compile and upload it. Keep in mind, that **upload will not work if the speaker is connected**.<br/>
-If everything works well, the built-in LED of the Board will blink 5 times (for the 5 minutes alarm delay) and then start flashing after 8 seconds with an interval of 24 seconds to signal each temperature reading.
+If everything works well, the built-in LED of the board will flash 5 times (for the 5 minutes alarm delay `OPEN_WINDOW_ALARM_DELAY_MINUTES`) and then start flashing after 8 seconds with an interval of 24 seconds to signal each temperature reading.
 
 ## Power reduction
 Before power reduction changes
 ![Final power reduction](https://github.com/ArminJo/Arduino-OpenWindowAlarm/blob/master/pictures/Digispark.jpg)
 
-We now have a Digispark board that [consumes 6 mA at 1MHz and 3,7 volt](https://github.com/ArminJo/micronucleus-firmware#measured-digispark-pll-clock-supply-current). With a battery of **2000 mAh** it will run for **14 days**. But it is possible to reduce power consumption to **27 �A** in 3 Steps.
+We now have a Digispark board that [consumes 6 mA at 1MHz and 3,7 volt](https://github.com/ArminJo/micronucleus-firmware#measured-digispark-pll-clock-supply-current). With a battery of **2000 mAh** it will run for **14 days**. But it is possible to reduce power consumption to **27 &micro;A** in 3 Steps.
 1. **Disabling the power LED** by breaking the copper wire that connects the power LED to the diode with a knife or removing / disabling the 102 resistor saves 2/2.2 mA.
 2. **Removing the VIN voltage regulator** saves 1.5/3.0 mA.<br/>
 The board now needs 3/4.3 mA at 3.7/5 volt and the 2000mAh battery will last for 28 days.
@@ -95,15 +99,15 @@ The board now needs 3/4.3 mA at 3.7/5 volt and the 2000mAh battery will last for
 The correct side of the diode can be found by using a continuity tester. One side of this diode is connected to pin 8 of the ATtiny (VCC) and Digispark 5V. The other side is connected to the USB V+.
 
 Now the USB pullup resistor is only activated if the Digispark board is connected to USB e.g. during programming.<br/>
-The board now consumes **27 �A** during sleep.
+The board now consumes **27 &micro;A** during sleep.
 
 The software loop needs 2.1 ms (plus 3 times 64 ms startup time) => active time is around 1/125 of total time.
 During the loop the power consumption is 100 times the sleep current => Loop adds **80%** to total power consumption.<br/>
-We now have an average current consumption of **75 �A** and the 2000mAh battery will last for **3 years**.
+We now have an average current consumption of **75 &micro;A** and the 2000mAh battery will last for **3 years**.
 
-The BOD current of 20 �A can only be disabled by setting fuses via ISP programmer](https://www.google.de/search?q=arduino+as+isp) and a connecting adapter. We can also reduce the start-up time from sleep from 64 to to 5 ms.
+The BOD current of 20 &micro;A can only be disabled by setting fuses via ISP programmer](https://www.google.de/search?q=arduino+as+isp) and a connecting adapter. We can also reduce the start-up time from sleep from 64 to to 5 ms.
 For reprogramming the fuses, you can use [this script](https://github.com/ArminJo/micronucleus-firmware/blob/master/utils/Write%2085%20Fuses%20E1%20DF%20FE%20-%20Digispark%20default%20without%20BOD%20and%20Pin5%20and%20fast%20startup.cmd).<br/>
-Without BOD and with fast startup we have an average current consumption of **9 �A** and are still able to program the ATtiny by USB.
+Without BOD and with fast startup we have an average current consumption of **9 &micro;A** and are still able to program the ATtiny by USB.
 
 ## Reset button
 **If you do not want to remove power to reset the alarm**, connect a reset button between PB5 and ground.
@@ -143,7 +147,7 @@ If the temperature on the sill is lower than the temperature where the board was
     than the temperature `TEMPERATURE_COMPARE_DISTANCE * TEMPERATURE_SAMPLE_SECONDS` (192 seconds-> 3 minutes and 12 seconds) before.
 * The delay is implemented by sleeping 3 times at `SLEEP_MODE_PWR_DOWN` for a period of 8 seconds -the maximum hardware sleep time- to reduce power consumption.
 
-* If an **open window is detected**, this is indicated by a longer **20 ms blink** and a **short click** every 24 seconds.
+* If an **open window is detected**, this is indicated by a longer **20 ms flash** and a **short click** every 24 seconds.
    Therefore, the internal sensor has a time of 3 minutes to adjust to the outer temperature in order to capture even small changes in temperature.
    The greater the temperature change the earlier the sensor value will change and detect an open window.
    

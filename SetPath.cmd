@@ -18,5 +18,5 @@
 @exit
 
 :setPath
-@echo Add Arduino binaries, Digispark launcher and our windows make.exe directory to path
+@echo Path found! Now add Arduino binaries, Digispark launcher and our windows make.exe directory to path
 @set PATH=%ARDUINO_DIRECTORY%\hardware\tools\avr\bin;%UserProfile%\AppData\Local\Arduino15\packages\digistump\tools\micronucleus\2.0a4;..\windows_exe;%PATH%
